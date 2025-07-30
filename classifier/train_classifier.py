@@ -3,6 +3,10 @@ import argparse
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
 
 # Argument parser
 parser = argparse.ArgumentParser()
@@ -48,6 +52,72 @@ clf.fit(X_train, y_train)
 y_pred = clf.predict(X_test)
 print("✅ Résultats sur le jeu de test :\n")
 print(classification_report(y_test, y_pred, target_names=["Benign", "Malicious"]))
+cm = confusion_matrix(y_test, y_pred)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["Benign", "Malicious"])
+disp.plot(cmap=plt.cm.Blues)
+plt.title("Matrice de confusion")
+plt.savefig("confusion_matrix.png")
+fig = plt.figure(figsize=(10, 8))
+ax = fig.add_subplot(111, projection='3d')
+
+ax.scatter(
+    X_test["avg_packet_size"],
+    X_test["frequency"],
+    X_test["volume_rate"],
+    c=y_test,
+    cmap='coolwarm',
+    alpha=0.6
+)
+
+ax.set_xlabel("avg_packet_size")
+ax.set_ylabel("frequency")
+ax.set_zlabel("volume_rate")
+ax.set_title("Représentation 3D des flows")
+plt.savefig("3d_representation.png")
+
+# Création d'un DataFrame test pour simplifier la visualisation
+df_test = X_test.copy()
+df_test["true_label"] = y_test.values
+df_test["predicted_label"] = y_pred
+
+# Faux positifs
+fp = df_test[(df_test["true_label"] == 0) & (df_test["predicted_label"] == 1)]
+
+# Faux négatifs
+fn = df_test[(df_test["true_label"] == 1) & (df_test["predicted_label"] == 0)]
+
+# Affichage
+plt.figure(figsize=(10, 6))
+
+# FP en rouge
+plt.scatter(fp["avg_packet_size"], fp["frequency"], color='red', label="Faux positifs (Benign → Malicious)", alpha=0.7)
+
+# FN en blue
+plt.scatter(fn["avg_packet_size"], fn["frequency"], color='blue', label="Faux négatifs (Malicious → Benign)", alpha=0.7)
+
+plt.xlabel("avg_packet_size")
+plt.ylabel("frequency")
+plt.title("Faux positifs et faux négatifs")
+plt.legend()
+plt.grid(True)
+plt.savefig("false_positives_negatives.png")
+
+# Ajout des prédictions dans le DataFrame original
+df_filtered["predicted_label"] = clf.predict(X)
+
+# Faux négatifs : vrai label = 1 (malicious), prédiction = 0 (benign)
+false_negatives = df_filtered[
+    (df_filtered["Label"] == 1) & (df_filtered["predicted_label"] == 0)
+]
+
+print(f"❌ Faux négatifs détectés : {len(false_negatives)}")
+
+# Afficher quelques exemples
+print(false_negatives[[
+    "SourceIP", "DestinationIP", "SourcePort", "DestinationPort",
+    "avg_packet_size", "frequency", "volume_rate", "Label", "predicted_label"
+]].head())
+
 
 # Importance des features
 importances = clf.feature_importances_
