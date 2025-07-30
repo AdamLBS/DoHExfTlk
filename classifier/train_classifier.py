@@ -125,3 +125,10 @@ features = ["avg_packet_size", "frequency", "volume_rate"]
 print("\n🎯 Importance des features :")
 for f, imp in zip(features, importances):
     print(f"  {f} : {imp:.4f}")
+train_df = X_train.copy()
+train_df["Label"] = y_train.values
+test_df = X_test.copy()
+test_df["Label"] = y_test.values
+
+train_df.to_csv("train.csv", index=False)
+test_df.to_csv("test.csv", index=False)
