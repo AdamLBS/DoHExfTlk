@@ -7,6 +7,16 @@ from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
+PAYLOAD_THRESHOLD = 200
+FREQ_THRESHOLD = 100
+VOLUME_THRESHOLD = 7500
+
+def apply_dohxp_detection(row):
+    return int(
+        row["avg_packet_size"] > PAYLOAD_THRESHOLD or
+        row["frequency"] > FREQ_THRESHOLD or
+        row["volume_rate"] > VOLUME_THRESHOLD
+    )
 
 # Argument parser
 parser = argparse.ArgumentParser()
@@ -132,3 +142,13 @@ test_df["Label"] = y_test.values
 
 train_df.to_csv("train.csv", index=False)
 test_df.to_csv("test.csv", index=False)
+X_test_dohxp = X_test.copy()
+X_test_dohxp["true_label"] = y_test.values
+X_test_dohxp["dohxp_pred"] = X_test_dohxp.apply(apply_dohxp_detection, axis=1)
+print("📏 Performances de DoHxP sur le test set :\n")
+print(classification_report(X_test_dohxp["true_label"], X_test_dohxp["dohxp_pred"], target_names=["Benign", "Malicious"]))
+fp_dohxp = X_test_dohxp[(X_test_dohxp["true_label"] == 0) & (X_test_dohxp["dohxp_pred"] == 1)]
+fn_dohxp = X_test_dohxp[(X_test_dohxp["true_label"] == 1) & (X_test_dohxp["dohxp_pred"] == 0)]
+
+print(f"❌ Faux positifs DoHxP : {len(fp_dohxp)}")
+print(f"❌ Faux négatifs DoHxP : {len(fn_dohxp)}")
