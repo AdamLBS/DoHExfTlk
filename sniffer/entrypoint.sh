@@ -1,9 +1,10 @@
-if [ -p /tmp/live_dns.pcap ]; then
-  rm /tmp/live_dns.pcap
-fi
+#!/bin/bash
+set -e
 
-mkfifo /tmp/live_dns.pcap
+# Lancer unbound en arrière-plan
+unbound-anchor -a /var/lib/unbound/root.key
+unbound-control-setup
+unbound -d &
 
-tcpdump -i any udp port 53 -w /tmp/live_dns.pcap &
-
-python decode_live.py /tmp/live_dns.pcap
+# Lancer le script Python qui sniffe directement sur l'interface eth0
+python3 /app/decode_live.py
