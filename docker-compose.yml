@@ -1,57 +1,72 @@
 version: '3.9'
 
-networks:
-  dohnet:
-    driver: bridge
-
 services:
 
-  # 🧠 Résolveur DNS récursif (Unbound)
-  resolver:
-    image: mvance/unbound
-    container_name: doh_resolver
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    restart: always
     networks:
       - dohnet
-    restart: unless-stopped
     ports:
-      - "5053:53/udp"  # port DNS ouvert en local (facultatif)
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.myresolver.acme.email=${EMAIL}"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
 
-  # 🌐 Serveur DoH avec HTTPS et certificat auto-signé
   doh_server:
-    image: satishweb/doh-server
+    image: satishweb/doh-server:latest
     container_name: doh_server
     networks:
       - dohnet
-    ports:
-      - "8053:8053"  # HTTP DoH, pas HTTPS ici
+    depends_on:
+      - resolver
     environment:
-      UPSTREAM_DNS_SERVER: "udp:doh_resolver:53"
+      UPSTREAM_DNS_SERVER: "udp:resolver:53"
       DOH_HTTP_PREFIX: "/dns-query"
       DOH_SERVER_LISTEN: ":8053"
       DOH_SERVER_TIMEOUT: "10"
       DOH_SERVER_TRIES: "3"
       DOH_SERVER_VERBOSE: "true"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.doh.rule=Host(`data.difews.com`) && Path(`/dns-query`)"
+      - "traefik.http.routers.doh.entrypoints=websecure"
+      - "traefik.http.routers.doh.tls.certresolver=myresolver"
+      - "traefik.http.services.doh.loadbalancer.server.port=8053"
 
-  # 🧑‍💻 Conteneur pour simuler un attaquant ou DNSExfiltrator
-  exfil_client:
-    image: ubuntu
-    container_name: dns_exfiltrator
+  resolver:
+    image: mvance/unbound
+    container_name: resolver
     networks:
       - dohnet
-    tty: true
-    stdin_open: true
-    entrypoint: [ "sleep", "infinity" ]
-    volumes:
-      - ./scripts:/scripts  # Tu peux mettre des scripts d’exfiltration ici
 
-  # 🛡️ Conteneur pour la détection (DoHLyzer, etc.)
-  detector:
-    build:
-      context: ./detector
-    container_name: doh_detector
-    networks:
-      - dohnet
+  sniffer_exfil:
+    build: ./sniffer
+    container_name: sniffer_exfil
+    network_mode: host
+
+#    networks:
+#      - dohnet
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
     volumes:
-      - ./data:/data
-      - ./output:/output
-    entrypoint: [ "sleep", "infinity" ]  # À remplacer par ta commande réelle
+      - ./sniffer/output:/app/output
+    restart: unless-stopped
+
+
+networks:
+  dohnet:
+    driver: bridge
