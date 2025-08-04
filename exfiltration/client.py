@@ -4,8 +4,8 @@ import time
 import random
 import string
 
-DOH_SERVER = "https://data.difews.com/dns-query"  # Ou ton propre serveur DoH
-DOMAIN = "exfill.difews.com"
+DOH_SERVER = "https://doh.local/dns-query"  # Serveur DoH local
+DOMAIN = "exfill.local"  # Domaine local pour les tests
 CHUNK_SIZE = 30  # taille du chunk encodé en base64
 
 def random_subdomain(length=5):

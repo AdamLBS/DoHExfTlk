@@ -4,3 +4,5 @@ classifier/results.txt
 classifier/*.png
 data/l2-malicious.csv
 data/l2-benign.csv
+certs/doh.local.crt
+certs/doh.local.key
