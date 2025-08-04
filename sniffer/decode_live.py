@@ -1,3 +1,4 @@
+import argparse
 from scapy.all import sniff, DNSQR
 import base64
 import re
@@ -37,5 +38,13 @@ def process_packet(pkt):
             print(f"[📦] Received chunk {index}: {chunk[:10]}...")
             try_rebuild(chunks)
 
-print("🟢 Live DoH exfil sniffer started...\n")
-sniff(filter="udp port 53", prn=process_packet, store=0, iface="veth65054df")
+def main():
+    parser = argparse.ArgumentParser(description="Live DNS exfiltration sniffer")
+    parser.add_argument("--iface", required=True, help="Interface réseau à écouter (ex: eth0, vethXXX)")
+    args = parser.parse_args()
+
+    print(f"🟢 Live DoH exfil sniffer started on interface {args.iface}...\n")
+    sniff(filter="udp port 53", prn=process_packet, store=0, iface=args.iface)
+
+if __name__ == "__main__":
+    main()

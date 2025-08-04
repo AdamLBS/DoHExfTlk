@@ -51,20 +51,22 @@ services:
     container_name: resolver
     networks:
       - dohnet
-
-  sniffer_exfil:
-    build: ./sniffer
-    container_name: sniffer_exfil
-    network_mode: host
-
-#    networks:
-#      - dohnet
-    cap_add:
-      - NET_ADMIN
-      - NET_RAW
     volumes:
-      - ./sniffer/output:/app/output
-    restart: unless-stopped
+      - ./resolver/unbound.conf:/etc/unbound/unbound.conf:ro
+
+#   sniffer_exfil:
+#     build: ./sniffer
+#     container_name: sniffer_exfil
+#     network_mode: host
+
+# #    networks:
+# #      - dohnet
+#     cap_add:
+#       - NET_ADMIN
+#       - NET_RAW
+#     volumes:
+#       - ./sniffer/output:/app/output
+#     restart: unless-stopped
 
 
 networks:
