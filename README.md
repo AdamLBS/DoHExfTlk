@@ -217,3 +217,5 @@ ls -la ./sniffer/output/
 - **Use `-k` flag** with curl to ignore certificate errors
 - **Fully offline environment** - no internet required once containers are built
 - **Educational/research use only** - not for production environments
+
+

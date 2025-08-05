@@ -1,0 +1,29 @@
+# DoH Exfiltration Client Docker Image
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    dnsutils \
+    iputils-ping \
+    net-tools \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy client application
+COPY client.py .
+COPY config_manager.py .
+COPY quick_test.py .
+COPY simple_test.py .
+
+# Create directory for test data
+RUN mkdir -p test_data captured
+
+# Default command
+CMD ["python", "-u", "quick_test.py"]
