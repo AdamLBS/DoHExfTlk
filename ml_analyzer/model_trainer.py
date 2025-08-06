@@ -295,7 +295,7 @@ class NetworkFlowMLTrainer:
                 cv=stratified_cv,
                 scoring='roc_auc',  # Meilleure métrique pour données déséquilibrées
                 n_jobs=-1,
-                verbose=1,
+                verbose=2,
                 return_train_score=True  # Pour détecter l'overfitting
             )
             
