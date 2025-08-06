@@ -1,5 +1,4 @@
 .venv/
-*.txt
 classifier/results.txt
 classifier/*.png
 data/l2-malicious.csv
