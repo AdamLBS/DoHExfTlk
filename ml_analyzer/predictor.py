@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 import logging
 from pathlib import Path
-from sklearn.externals import joblib
+import joblib
 import argparse
 import json
 from datetime import datetime
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class DoHPredictor:
     """Prédicteur ML pour la détection d'exfiltration DoH"""
     
-    def __init__(self, models_dir="/home/ubuntu/Kent-Dissertation/models"):
+    def __init__(self, models_dir="../models"):
         self.models_dir = Path(models_dir)
         self.models = {}
         self.preprocessors = None
@@ -268,7 +268,7 @@ def main():
     parser.add_argument('input', nargs='?', help="Fichier CSV d'entrée")
     parser.add_argument('-o', '--output', help="Fichier de sortie (optionnel)")
     parser.add_argument('-m', '--model', help="Modèle spécifique à utiliser")
-    parser.add_argument('--models-dir', default="/home/ubuntu/Kent-Dissertation/models",
+    parser.add_argument('--models-dir', default="/mnt/c/Users/adoue/Kent/Kent-Dissertation/models",
                       help="Répertoire des modèles")
     parser.add_argument('--test', action='store_true', 
                       help="Tester avec des données d'exemple")

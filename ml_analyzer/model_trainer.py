@@ -7,6 +7,7 @@ Adapté pour les datasets de flow réseau avec features statistiques
 import os
 import json
 import logging
+import argparse
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -32,13 +33,15 @@ logger = logging.getLogger(__name__)
 class NetworkFlowMLTrainer:
     """Entraîneur ML pour datasets de flow réseau"""
     
-    def __init__(self):
+    def __init__(self, quick_mode=False):
+        self.quick_mode = quick_mode
+        self.max_samples = 2000 if quick_mode else None
         self.setup_directories()
         self.scaler = StandardScaler()
         self.label_encoder = LabelEncoder()
         self.smote = SMOTE(random_state=42)
         self.use_class_balancing = True
-        self.cross_val_folds = 5
+        self.cross_val_folds = 3 if quick_mode else 5  # Réduire les folds en mode quick
         
         # Features numériques du dataset réseau
         self.numeric_features = [
@@ -57,60 +60,88 @@ class NetworkFlowMLTrainer:
         ]
         
         # Configuration des modèles avec régularisation anti-overfitting
-        self.models_config = {
-            'random_forest': {
-                'model': RandomForestClassifier,
-                'params': {
-                    'n_estimators': [100, 200],
-                    'max_depth': [10, 15, 20],  # Limiter la profondeur
-                    'min_samples_split': [5, 10, 20],  # Augmenter min_samples_split
-                    'min_samples_leaf': [2, 5, 10],   # Ajouter min_samples_leaf
-                    'max_features': ['sqrt', 'log2', 0.8],  # Limiter les features
-                    'class_weight': ['balanced'] if self.use_class_balancing else [None],
-                    'random_state': [42]
-                }
-            },
-            'gradient_boosting': {
-                'model': GradientBoostingClassifier,
-                'params': {
-                    'n_estimators': [100, 150],  # Réduire pour éviter l'overfitting
-                    'learning_rate': [0.05, 0.1, 0.15],  # Ajouter des taux plus faibles
-                    'max_depth': [3, 5],  # Limiter la profondeur
-                    'min_samples_split': [10, 20],  # Augmenter
-                    'min_samples_leaf': [5, 10],   # Ajouter
-                    'subsample': [0.8, 0.9],  # Sous-échantillonnage
-                    'random_state': [42]
-                }
-            },
-            'logistic_regression': {
-                'model': LogisticRegression,
-                'params': {
-                    'C': [0.01, 0.1, 1],  # Ajouter plus de régularisation
-                    'penalty': ['l1', 'l2', 'elasticnet'],  # Différents types de régularisation
-                    'l1_ratio': [0.5],  # Pour elasticnet
-                    'solver': ['liblinear', 'saga'],  # Saga pour elasticnet
-                    'class_weight': ['balanced'] if self.use_class_balancing else [None],
-                    'random_state': [42],
-                    'max_iter': [1000, 2000]
-                }
-            },
-            'svm': {
-                'model': SVC,
-                'params': {
-                    'C': [0.1, 1, 5],  # Réduire C pour plus de régularisation
-                    'kernel': ['rbf', 'linear'],
-                    'gamma': ['scale', 'auto', 0.1, 0.01],  # Contrôler la complexité
-                    'class_weight': ['balanced'] if self.use_class_balancing else [None],
-                    'probability': [True],
-                    'random_state': [42]
+        if quick_mode:
+            # Configuration simplifiée pour mode quick
+            self.models_config = {
+                'random_forest': {
+                    'model': RandomForestClassifier,
+                    'params': {
+                        'n_estimators': [50, 100],
+                        'max_depth': [10, 15],
+                        'min_samples_split': [10],
+                        'min_samples_leaf': [5],
+                        'max_features': ['sqrt'],
+                        'class_weight': ['balanced'] if self.use_class_balancing else [None],
+                        'random_state': [42]
+                    }
+                },
+                'logistic_regression': {
+                    'model': LogisticRegression,
+                    'params': {
+                        'C': [0.1, 1],
+                        'penalty': ['l2'],
+                        'class_weight': ['balanced'] if self.use_class_balancing else [None],
+                        'random_state': [42],
+                        'max_iter': [1000]
+                    }
                 }
             }
-        }
+        else:
+            # Configuration complète pour mode normal
+            self.models_config = {
+                'random_forest': {
+                    'model': RandomForestClassifier,
+                    'params': {
+                        'n_estimators': [100, 200],
+                        'max_depth': [10, 15, 20],  # Limiter la profondeur
+                        'min_samples_split': [5, 10, 20],  # Augmenter min_samples_split
+                        'min_samples_leaf': [2, 5, 10],   # Ajouter min_samples_leaf
+                        'max_features': ['sqrt', 'log2', 0.8],  # Limiter les features
+                        'class_weight': ['balanced'] if self.use_class_balancing else [None],
+                        'random_state': [42]
+                    }
+                },
+                'gradient_boosting': {
+                    'model': GradientBoostingClassifier,
+                    'params': {
+                        'n_estimators': [100, 150],  # Réduire pour éviter l'overfitting
+                        'learning_rate': [0.05, 0.1, 0.15],  # Ajouter des taux plus faibles
+                        'max_depth': [3, 5],  # Limiter la profondeur
+                        'min_samples_split': [10, 20],  # Augmenter
+                        'min_samples_leaf': [5, 10],   # Ajouter
+                        'subsample': [0.8, 0.9],  # Sous-échantillonnage
+                        'random_state': [42]
+                    }
+                },
+                'logistic_regression': {
+                    'model': LogisticRegression,
+                    'params': {
+                        'C': [0.01, 0.1, 1],  # Ajouter plus de régularisation
+                        'penalty': ['l1', 'l2', 'elasticnet'],  # Différents types de régularisation
+                        'l1_ratio': [0.5],  # Pour elasticnet
+                        'solver': ['liblinear', 'saga'],  # Saga pour elasticnet
+                        'class_weight': ['balanced'] if self.use_class_balancing else [None],
+                        'random_state': [42],
+                        'max_iter': [1000, 2000]
+                    }
+                },
+                'svm': {
+                    'model': SVC,
+                    'params': {
+                        'C': [0.1, 1, 5],  # Réduire C pour plus de régularisation
+                        'kernel': ['rbf', 'linear'],
+                        'gamma': ['scale', 'auto', 0.1, 0.01],  # Contrôler la complexité
+                        'class_weight': ['balanced'] if self.use_class_balancing else [None],
+                        'probability': [True],
+                        'random_state': [42]
+                    }
+                }
+            }
     
     def setup_directories(self):
         """Crée les répertoires nécessaires"""
-        self.models_dir = Path("/home/ubuntu/Kent-Dissertation/models")
-        self.reports_dir = Path("/home/ubuntu/Kent-Dissertation/ml_reports")
+        self.models_dir = Path("../models") #TODO : Adapt to current directory
+        self.reports_dir = Path("../ml_reports")
         
         self.models_dir.mkdir(exist_ok=True)
         self.reports_dir.mkdir(exist_ok=True)
@@ -121,7 +152,7 @@ class NetworkFlowMLTrainer:
         """Charge tous les datasets disponibles"""
         logger.info("📊 Chargement des datasets...")
         
-        datasets_dir = Path("/home/ubuntu/Kent-Dissertation/datasets")
+        datasets_dir = Path("../datasets")
         all_data = []
         
         # Chercher tous les fichiers CSV dans le dossier datasets
@@ -148,6 +179,18 @@ class NetworkFlowMLTrainer:
             combined_df = pd.concat(all_data, ignore_index=True)
             logger.info(f"📊 Dataset combiné: {len(combined_df)} lignes")
             logger.info(f"📊 Distribution des labels: {combined_df['Label'].value_counts().to_dict()}")
+            
+            # Appliquer la limitation en mode quick
+            if self.quick_mode and self.max_samples and len(combined_df) > self.max_samples:
+                logger.info(f"🚀 Mode quick activé: limitation à {self.max_samples} échantillons")
+                # Échantillonnage stratifié pour conserver la distribution des classes
+                combined_df = combined_df.groupby('Label').apply(
+                    lambda x: x.sample(min(len(x), self.max_samples // combined_df['Label'].nunique()), 
+                                     random_state=42)
+                ).reset_index(drop=True)
+                logger.info(f"📊 Dataset limité: {len(combined_df)} lignes")
+                logger.info(f"📊 Nouvelle distribution: {combined_df['Label'].value_counts().to_dict()}")
+            
             return combined_df
         else:
             logger.error("❌ Aucun dataset valide trouvé")
@@ -490,17 +533,29 @@ Recommandations anti-overfitting:
 
 def main():
     """Point d'entrée principal"""
-    trainer = NetworkFlowMLTrainer()
+    parser = argparse.ArgumentParser(description='Entraîneur ML pour datasets de flow réseau')
+    parser.add_argument('--quick', action='store_true', 
+                       help='Mode quick: limite le dataset à 2000 échantillons pour un entraînement rapide')
+    
+    args = parser.parse_args()
+    
+    if args.quick:
+        logger.info("🚀 Mode QUICK activé - Entraînement rapide avec 2000 échantillons max")
+    
+    trainer = NetworkFlowMLTrainer(quick_mode=args.quick)
     
     try:
         models = trainer.train_all_models()
         logger.info(f"🎉 Entraînement terminé! {len(models)} modèles créés.")
         
+        if args.quick:
+            logger.info("✅ Mode quick terminé - Pour un entraînement complet, lancez sans --quick")
+        
         # Test rapide de prédiction
         logger.info("🧪 Test de prédiction...")
         
         # Charger un échantillon pour tester
-        datasets_dir = Path("/home/ubuntu/Kent-Dissertation/datasets")
+        datasets_dir = Path("../datasets")
         test_file = next(datasets_dir.glob("*.csv"), None)
         
         if test_file:
