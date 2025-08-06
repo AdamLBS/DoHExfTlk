@@ -1,0 +1,35 @@
+# Dépendances Python pour ML Analyzer
+# ML et analyse de données
+scikit-learn==1.3.0
+pandas==2.0.3
+numpy==1.24.3
+matplotlib==3.7.2
+seaborn==0.12.2
+
+# Monitoring système et fichiers
+watchdog==3.0.0
+
+# Traitement réseau (si disponible)
+scapy==2.5.0
+
+# API et web (pour futures extensions)
+flask==2.3.2
+requests==2.31.0
+
+# Utilitaires
+python-dateutil==2.8.2
+pytz==2023.3
+
+# Logging et configuration
+pyyaml==6.0.1
+
+# Calculs mathématiques avancés
+scipy==1.11.1
+
+# Gestion des modèles
+joblib==1.3.1
+
+# DoHLyzer dependencies (si nécessaire)
+# dpkt==1.9.8
+# pypcap==1.3.0
+ 
