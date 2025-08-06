@@ -1,0 +1,4 @@
+scapy==2.5.0
+requests==2.31.0
+urllib3>=1.26.0
+psutil
