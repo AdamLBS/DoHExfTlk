@@ -35,7 +35,7 @@ class NetworkFlowMLTrainer:
     
     def __init__(self, quick_mode=False):
         self.quick_mode = quick_mode
-        self.max_samples = 2000 if quick_mode else None
+        self.max_samples = 10000 if quick_mode else None
         self.setup_directories()
         self.scaler = StandardScaler()
         self.label_encoder = LabelEncoder()

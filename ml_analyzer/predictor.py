@@ -268,7 +268,7 @@ def main():
     parser.add_argument('input', nargs='?', help="Fichier CSV d'entrée")
     parser.add_argument('-o', '--output', help="Fichier de sortie (optionnel)")
     parser.add_argument('-m', '--model', help="Modèle spécifique à utiliser")
-    parser.add_argument('--models-dir', default="/mnt/c/Users/adoue/Kent/Kent-Dissertation/models",
+    parser.add_argument('--models-dir', default="../models",
                       help="Répertoire des modèles")
     parser.add_argument('--test', action='store_true', 
                       help="Tester avec des données d'exemple")
@@ -298,6 +298,7 @@ def main():
         
         # Afficher un résumé
         logger.info("📊 === RÉSUMÉ DES PRÉDICTIONS ===")
+        summary_data = {}
         for model_name, result in results.items():
             predictions = result['predictions']
             benign_count = predictions.count('Benign')
@@ -308,6 +309,35 @@ def main():
             logger.info(f"   - Benign: {benign_count}")
             logger.info(f"   - Malicious: {malicious_count}")
             logger.info(f"   - Confiance moyenne: {avg_confidence:.3f}")
+            
+            summary_data[model_name] = {
+                'benign_count': benign_count,
+                'malicious_count': malicious_count,
+                'total_predictions': len(predictions),
+                'average_confidence': float(avg_confidence),
+                'detection_rate': malicious_count / len(predictions) if predictions else 0
+            }
+        
+        # Write results to JSON file with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_dir = Path("output")
+        output_dir.mkdir(exist_ok=True)
+        
+        results_file = output_dir / f"results_{timestamp}.json"
+        
+        output_data = {
+            'timestamp': datetime.now().isoformat(),
+            'input_file': str(args.input),
+            'model_used': args.model if args.model else 'all_models',
+            'summary': summary_data,
+            'detailed_results': results
+        }
+        
+        with open(results_file, 'w') as f:
+            json.dump(output_data, f, indent=2, default=str)
+        
+        logger.info(f"💾 Results written to: {results_file}")
+        
         
     except Exception as e:
         logger.error(f"❌ Erreur: {e}")

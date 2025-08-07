@@ -59,20 +59,6 @@ services:
     volumes:
       - ./resolver/unbound.conf:/etc/unbound/unbound.conf:ro
 
-  # sniffer_exfil:
-  #   build: ./sniffer
-  #   container_name: sniffer_exfil
-  #   network_mode: host
-  #   environment:
-  #     - PYTHONUNBUFFERED=1
-  #   cap_add:
-  #     - NET_ADMIN
-  #     - NET_RAW
-  #   volumes:
-  #     - ./sniffer/output:/app/output
-  #     - /var/run/docker.sock:/var/run/docker.sock:ro
-  #   restart: unless-stopped
-
   client_test:
     image: ubuntu:22.04
     container_name: client_test
@@ -118,6 +104,27 @@ services:
     depends_on:
       - resolver
       - doh_server
+      
+  # Analyseur de trafic DoH avec DoHLyzer
+  traffic_analyzer:
+    build:
+      context: ./traffic_analyzer
+      dockerfile: Dockerfile
+    container_name: traffic_analyzer
+    network_mode: host
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    volumes:
+      - ./traffic_analyzer/output:/app/output
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+      - OUTPUT_DIR=/app/output
+    restart: unless-stopped
+    depends_on:
+      - doh_server
+      - traefik
 
   # Client d'exfiltration pour les tests
   exfil_client:
@@ -145,33 +152,6 @@ services:
         echo 'Starting DoH exfiltration tests...' &&
         python quick_test.py
       "
-
-  # ml_evasion:
-  #   build: ./ml_evasion
-  #   container_name: ml_evasion
-  #   networks:
-  #     - dohnet
-  #   depends_on:
-  #     - doh_server
-  #     - traefik
-  #     - sniffer_exfil
-  #   volumes:
-  #     - ./ml_evasion/results:/app/results
-  #     - ./sniffer/output:/app/sniffer_output:ro
-  #     - ./datasets:/app/datasets:ro
-  #   environment:
-  #     - DOH_SERVER=https://doh.local/dns-query
-  #     - PYTHONPATH=/app
-  #     - PYTHONUNBUFFERED=1
-  #   command: >
-  #     bash -c "
-  #       echo 'Waiting for DoH infrastructure to be ready...' &&
-  #       sleep 15 &&
-  #       TRAEFIK_IP=$$(getent hosts traefik | awk '{ print $$1 }') &&
-  #       echo \"$$TRAEFIK_IP doh.local\" >> /etc/hosts &&
-  #       echo 'Starting Real DoH Exfiltration Research...' &&
-  #       python real_doh_exfiltration.py
-  #     "
 
 
 networks:
