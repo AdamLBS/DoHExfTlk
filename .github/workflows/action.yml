@@ -1,0 +1,35 @@
+name: Docker Build Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-docker-build:
+    name: Test Docker Compose Build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup directories
+      run: |
+        mkdir -p certs exfiltration/client/test_data exfiltration/server/captured
+        mkdir -p traffic_analyzer/output ml_reports datasets
+
+    - name: Generate certificates
+      run: |
+        chmod +x generate_certs.sh
+        ./generate_certs.sh || echo "Cert generation failed, continuing..."
+
+    - name: Test docker-compose build
+      run: |
+        docker-compose build
+        echo "✅ All containers built successfully!"
+
+    - name: Show built images
+      run: |
+        docker images

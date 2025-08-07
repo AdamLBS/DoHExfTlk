@@ -85,7 +85,7 @@ services:
   # Service d'interception du trafic DoH pour capturer l'exfiltration
   exfil_interceptor:
     build: 
-      context: ./exfiltration
+      context: ./exfiltration/server/
       dockerfile: Dockerfile.server
     container_name: exfil_interceptor
     network_mode: host
@@ -93,7 +93,7 @@ services:
       - NET_RAW
       - NET_ADMIN
     volumes:
-      - ./exfiltration/captured:/app/captured
+      - ./exfiltration/server/captured:/app/captured
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       - OUTPUT_DIR=/app/captured
@@ -129,7 +129,7 @@ services:
   # Client d'exfiltration pour les tests
   exfil_client:
     build:
-      context: ./exfiltration
+      context: ./exfiltration/client
       dockerfile: Dockerfile.client
     container_name: exfil_client
     networks:
@@ -139,7 +139,7 @@ services:
       - traefik
       - exfil_interceptor
     volumes:
-      - ./exfiltration/test_data:/app/test_data
+      - ./exfiltration/client/test_data:/app/test_data
     environment:
       - DOH_SERVER=https://doh.local/dns-query
       - TARGET_DOMAIN=exfill.local
