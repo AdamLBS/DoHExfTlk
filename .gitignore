@@ -9,3 +9,6 @@ exfiltration/captured/
 datasets/
 models/
 ml_reports/
+ml_analyzer/output/
+sniffer/output/
+traffic_analyzer/output/

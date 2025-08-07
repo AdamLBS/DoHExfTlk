@@ -12,6 +12,7 @@ import joblib
 import argparse
 import json
 from datetime import datetime
+from collections import defaultdict
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -317,7 +318,42 @@ def main():
                 'average_confidence': float(avg_confidence),
                 'detection_rate': malicious_count / len(predictions) if predictions else 0
             }
-        
+        per_ip_summary_by_model = {}
+
+        # Recharger le CSV d'entrée pour les IPs
+        df_input = pd.read_csv(args.input)
+        source_ips = df_input['SourceIP']  # ou 'DestinationIP' selon le contexte
+
+        for model_name, result in results.items():
+            preds = result['predictions']
+            confs = result['confidence']
+            
+            ip_summary = defaultdict(lambda: {
+                'total_flows': 0,
+                'malicious': 0,
+                'benign': 0,
+                'malicious_conf': [],
+                'benign_conf': []
+            })
+            
+            for ip, label, conf in zip(source_ips, preds, confs):
+                ip_summary[ip]['total_flows'] += 1
+                if label == 'Malicious':
+                    ip_summary[ip]['malicious'] += 1
+                    ip_summary[ip]['malicious_conf'].append(conf)
+                else:
+                    ip_summary[ip]['benign'] += 1
+                    ip_summary[ip]['benign_conf'].append(conf)
+
+            # Nettoyage des champs inutiles
+            for ip, stats in ip_summary.items():
+                stats['malicious_conf_avg'] = round(np.mean(stats['malicious_conf']), 4) if stats['malicious_conf'] else 0.0
+                stats['benign_conf_avg'] = round(np.mean(stats['benign_conf']), 4) if stats['benign_conf'] else 0.0
+                del stats['malicious_conf']
+                del stats['benign_conf']
+            
+            per_ip_summary_by_model[model_name] = dict(ip_summary)
+
         # Write results to JSON file with timestamp
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_dir = Path("output")
@@ -332,7 +368,8 @@ def main():
             'summary': summary_data,
             'detailed_results': results
         }
-        
+        output_data["per_ip_summary_by_model"] = per_ip_summary_by_model
+
         with open(results_file, 'w') as f:
             json.dump(output_data, f, indent=2, default=str)
         

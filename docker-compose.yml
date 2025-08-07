@@ -150,8 +150,7 @@ services:
         TRAEFIK_IP=$$(getent hosts traefik | awk '{ print $$1 }') &&
         echo \"$$TRAEFIK_IP doh.local\" >> /etc/hosts &&
         echo 'Starting DoH exfiltration tests...' &&
-        python quick_test.py
-      "
+        python quick_test.py /app/test_data/image.png"
 
 
 networks:

@@ -1,0 +1,50 @@
+FROM python:3.9-slim
+
+# Installation des dépendances système
+RUN apt-get update && apt-get install -y \
+    git \
+    libpcap-dev \
+    tcpdump \
+    net-tools \
+    iputils-ping \
+    curl \
+    gcc \
+    python3-dev \
+    netcat-openbsd \
+    dnsutils \
+    docker.io \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Clone du repo DoHLyzer public
+RUN git clone https://github.com/AdamLBS/DoHLyzer.git /app/DoHLyzer
+
+WORKDIR /app/DoHLyzer
+
+# Installation des dépendances Python
+RUN pip install --no-cache-dir \
+    scapy \
+    pandas \
+    numpy \
+    netifaces \
+    psutil \
+    docker \
+    requests
+
+RUN pip install -r requirements.txt
+
+# Script principal d'analyse
+COPY detect_interface.sh /app/detect_interface.sh
+
+# Configuration des permissions pour capture réseau
+RUN chmod +x /app/detect_interface.sh
+
+# Répertoire de sortie pour les CSV
+RUN mkdir -p /app/output
+
+WORKDIR /app
+
+
+
+CMD ["bash", "detect_interface.sh"]
