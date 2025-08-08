@@ -1,0 +1,31 @@
+{
+  "name": "APT Simulation",
+  "description": "Simulation d'APT avec exfiltration très lente et discrète",
+  "exfiltration_config": {
+    "doh_server": "https://doh.local/dns-query",
+    "target_domain": "update-service.local",
+    "chunk_size": 8,
+    "encoding": "base32",
+    "timing_pattern": "random",
+    "base_delay": 30.0,
+    "delay_variance": 15.0,
+    "compression": true,
+    "encryption": true,
+    "encryption_key": "apt_long_term_key",
+    "subdomain_randomization": true,
+    "domain_rotation": true,
+    "backup_domains": [
+      "security-updates.local",
+      "maintenance-api.local",
+      "status-check.local"
+    ],
+    "padding": true,
+    "padding_size": 20
+  },
+  "test_files": [
+    "financial_records.xlsx",
+    "employee_data.csv"
+  ],
+  "detection_expected": false,
+  "notes": "Simulation APT : très lents délais, rotation domaines, chiffrement"
+}

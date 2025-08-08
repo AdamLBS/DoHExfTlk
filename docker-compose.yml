@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
 
   traefik:
@@ -140,6 +138,7 @@ services:
       - exfil_interceptor
     volumes:
       - ./exfiltration/client/test_data:/app/test_data
+      - ./exfiltration/client/test_configs:/app/test_configs
     environment:
       - DOH_SERVER=https://doh.local/dns-query
       - TARGET_DOMAIN=exfill.local
@@ -150,7 +149,7 @@ services:
         TRAEFIK_IP=$$(getent hosts traefik | awk '{ print $$1 }') &&
         echo \"$$TRAEFIK_IP doh.local\" >> /etc/hosts &&
         echo 'Starting DoH exfiltration tests...' &&
-        python quick_test.py /app/test_data/image.png"
+        bash keep_alive.sh"
 
 
 networks:

@@ -1,0 +1,30 @@
+{
+  "name": "Advanced Stealth",
+  "description": "Configuration furtive avancée pour évasion ML",
+  "exfiltration_config": {
+    "doh_server": "https://doh.local/dns-query",
+    "target_domain": "cdn-assets.local",
+    "chunk_size": 12,
+    "encoding": "custom",
+    "timing_pattern": "stealth",
+    "base_delay": 8.0,
+    "delay_variance": 3.0,
+    "compression": true,
+    "encryption": true,
+    "encryption_key": "stealth_key_2024",
+    "subdomain_randomization": true,
+    "padding": true,
+    "padding_size": 15,
+    "domain_rotation": true,
+    "backup_domains": [
+      "api-service.local",
+      "media-content.local"
+    ]
+  },
+  "test_files": [
+    "database_dump.sql",
+    "api_keys.json"
+  ],
+  "detection_expected": false,
+  "notes": "Techniques d'évasion avancées : petits chunks, timing variable, chiffrement"
+}

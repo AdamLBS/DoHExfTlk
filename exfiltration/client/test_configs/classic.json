@@ -1,0 +1,21 @@
+{
+  "name": "Classic Exfiltration",
+  "description": "Configuration classique facilement détectable pour tests de base",
+  "exfiltration_config": {
+    "doh_server": "https://doh.local/dns-query",
+    "target_domain": "exfill.local",
+    "chunk_size": 40,
+    "encoding": "base64",
+    "timing_pattern": "regular",
+    "base_delay": 0.5,
+    "compression": false,
+    "encryption": false,
+    "subdomain_randomization": false
+  },
+  "test_files": [
+    "sample.txt",
+    "credentials.json"
+  ],
+  "detection_expected": true,
+  "notes": "Configuration de base pour validation du système de détection"
+}

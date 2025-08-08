@@ -4,6 +4,7 @@ Quick DoH Exfiltration Test
 
 Simple test script for Docker integration verification.
 Can test with a specific file or create a test file.
+Now supports JSON configuration files for flexible testing.
 """
 
 import argparse

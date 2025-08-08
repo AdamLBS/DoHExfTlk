@@ -1,0 +1,23 @@
+{
+  "name": "Speed Test",
+  "description": "Configuration optimisée pour la vitesse maximale",
+  "exfiltration_config": {
+    "doh_server": "https://doh.local/dns-query",
+    "target_domain": "fast-cdn.local",
+    "chunk_size": 60,
+    "encoding": "base64",
+    "timing_pattern": "burst",
+    "base_delay": 0.001,
+    "burst_size": 20,
+    "burst_delay": 0.1,
+    "compression": true,
+    "max_retries": 1,
+    "retry_delay": 0.05,
+    "timeout": 2.0
+  },
+  "test_files": [
+    "speed_test_file.bin"
+  ],
+  "detection_expected": true,
+  "notes": "Configuration pour mesurer la vitesse maximale d'exfiltration"
+}

@@ -16,13 +16,20 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy client application
+# Copy client application and configuration tools
 COPY client.py .
 COPY config_manager.py .
+COPY json_config_loader.py .
 COPY quick_test.py .
+COPY quick_test_json.py .
+COPY config_generator.py .
 
-# Create directory for test data
-RUN mkdir -p test_data captured
+# Create directories for test data and configurations
+RUN mkdir -p test_data captured test_configs
 
-# Default command
-CMD ["python", "-u", "quick_test.py", "/app/test_data/image.png"]
+# Default command - now supports JSON configurations
+COPY keep_alive.sh .
+RUN chmod +x keep_alive.sh
+
+# Default command - now supports JSON configurations and keeps container alive
+CMD ["./keep_alive.sh"]
