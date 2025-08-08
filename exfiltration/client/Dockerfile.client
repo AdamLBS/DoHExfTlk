@@ -20,7 +20,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY client.py .
 COPY config_manager.py .
 COPY quick_test.py .
-COPY simple_test.py .
 
 # Create directory for test data
 RUN mkdir -p test_data captured
