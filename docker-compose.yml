@@ -139,6 +139,9 @@ services:
     volumes:
       - ./exfiltration/client/test_data:/app/test_data
       - ./exfiltration/client/test_configs:/app/test_configs
+      - ./traffic_analyzer/output:/traffic_analyzer/output
+      - ./ml_analyzer/:/ml
+      - ./models:/models
     environment:
       - DOH_SERVER=https://doh.local/dns-query
       - TARGET_DOMAIN=exfill.local
@@ -149,6 +152,8 @@ services:
         TRAEFIK_IP=$$(getent hosts traefik | awk '{ print $$1 }') &&
         echo \"$$TRAEFIK_IP doh.local\" >> /etc/hosts &&
         echo 'Starting DoH exfiltration tests...' &&
+        cd /ml && pip install -r requirements.txt &&
+        cd /app && 
         bash keep_alive.sh"
 
 
