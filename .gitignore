@@ -7,7 +7,6 @@ certs/doh.local.crt
 certs/doh.local.key
 exfiltration/captured/
 datasets/
-models/
 ml_reports/
 ml_analyzer/output/
 sniffer/output/
