@@ -161,6 +161,14 @@ class SimpleExfiltrationServer:
                     logger.info(f"✅ Données reconstruites sauvées: {output_file}")
                     logger.info(f"📊 Taille: {len(reconstructed_data)} bytes")
                     logger.info(f"� Type détecté: {file_info['type']}")
+                    # rename le fichier avec l'extension appropriée
+                    logger.info(f"🔍 Encodage: {file_info.get('encoding', 'unknown')}")
+                    logger.info(f"📂 Extension suggérée: {file_info.get('extension', '.bin')}")
+                    logger.info(f"File info: {file_info}")
+                    if 'extension' in file_info:
+                        new_file_name = output_file.with_suffix(file_info['extension'])
+                        output_file.rename(new_file_name)
+                        logger.info(f"🔄 Fichier renommé: {new_file_name}")
                     
                     # Afficher l'aperçu selon le type
                     self._display_file_preview(reconstructed_data, file_info)

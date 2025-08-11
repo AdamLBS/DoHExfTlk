@@ -18,7 +18,7 @@ WORKDIR /app
 
 # Copier les fichiers Python et scripts
 COPY requirements.txt .
-COPY simple_server.py .
+COPY server.py .
 COPY traffic_interceptor.py .
 COPY start_server.sh .
 

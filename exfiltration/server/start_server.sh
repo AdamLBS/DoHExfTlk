@@ -40,4 +40,4 @@ mkdir -p "${OUTPUT_DIR:-/app/captured}"
 
 # Lancer le serveur d'exfiltration avec détection d'interface dynamique
 export INTERFACE="$IFACE"
-python3 -u /app/simple_server.py
+python3 -u /app/server.py

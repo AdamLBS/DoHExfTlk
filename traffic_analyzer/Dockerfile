@@ -44,7 +44,9 @@ RUN chmod +x /app/detect_interface.sh
 RUN mkdir -p /app/output
 
 WORKDIR /app
-
+ENV RUNTIME_UID=1000
+ENV RUNTIME_GID=1000
+ENV UMASK=0002
 
 
 CMD ["bash", "detect_interface.sh"]

@@ -130,6 +130,8 @@ services:
       context: ./exfiltration/client
       dockerfile: Dockerfile.client
     container_name: exfil_client
+    tty: true
+    stdin_open: true
     networks:
       - dohnet
     depends_on:
@@ -155,7 +157,6 @@ services:
         cd /ml && pip install -r requirements.txt &&
         cd /app && 
         bash keep_alive.sh"
-
 
 networks:
   dohnet:

@@ -1,8 +1,6 @@
 # DoH Exfiltration Client Docker Image
 FROM python:3.11-slim
-
 WORKDIR /app
-
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     curl \
@@ -29,6 +27,7 @@ RUN mkdir -p test_data captured test_configs
 # Default command - now supports JSON configurations
 COPY keep_alive.sh .
 RUN chmod +x keep_alive.sh
+
 
 # Default command - now supports JSON configurations and keeps container alive
 CMD ["./keep_alive.sh"]

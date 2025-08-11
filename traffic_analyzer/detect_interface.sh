@@ -33,6 +33,20 @@ fi
 
 # Créer le répertoire de sortie
 mkdir -p "${OUTPUT_DIR:-/app/captured}"
+USER_ID="${USER_ID:-1000}"
+GROUP_ID="${GROUP_ID:-1000}"
+UMASK_VALUE="${UMASK_VALUE:-0002}"   # fichiers 664 / dossiers 775
+
+umask "$UMASK_VALUE"
+chown -R "$USER_ID:$GROUP_ID" "${OUTPUT_DIR:-/app/captured}" 2>/dev/null || true
+# Si setfacl est dispo, on met des ACL par défaut pour conserver les droits sur tout nouveau fichier/dossier
+if command -v setfacl >/dev/null 2>&1; then
+  setfacl -R -m u:$USER_ID:rwx,g:$GROUP_ID:rwx "${OUTPUT_DIR:-/app/captured}" 2>/dev/null || true
+  setfacl -R -d -m u:$USER_ID:rwx,g:$GROUP_ID:rwx "${OUTPUT_DIR:-/app/captured}" 2>/dev/null || true
+fi
+# Re-chown à la sortie (même si le script plante)
+trap 'chown -R "$USER_ID:$GROUP_ID" "${OUTPUT_DIR:-/app/captured}" 2>/dev/null || true' EXIT
+
 
 # Lancer le serveur d'exfiltration avec détection d'interface dynamique
 export INTERFACE="$IFACE"
