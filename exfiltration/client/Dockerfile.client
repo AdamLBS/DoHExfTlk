@@ -18,10 +18,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy client application and configuration tools
 COPY client.py .
-COPY config_manager.py .
 COPY json_config_loader.py .
-COPY quick_test.py .
-COPY quick_test_json.py .
+COPY run_client.py .
 COPY config_generator.py .
 COPY filter_detection_csv.sh .
 

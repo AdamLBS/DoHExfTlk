@@ -1,0 +1,24 @@
+{
+  "name": "Burst",
+  "description": "Burst",
+  "exfiltration_config": {
+    "doh_server": "https://doh.local/dns-query",
+    "target_domain": "exfill.local",
+    "chunk_size": 30,
+    "encoding": "base64",
+    "timing_pattern": "burst",
+    "base_delay": 0.1,
+    "compression": true,
+    "encryption": false,
+    "subdomain_randomization": false,
+    "padding": false,
+    "domain_rotation": false,
+    "burst_size": 100,
+    "burst_delay": 0.1
+  },
+  "test_files": [
+    "/app/test_data/image.png"
+  ],
+  "detection_expected": false,
+  "notes": ""
+}
