@@ -1,0 +1,23 @@
+name: Mirror to Kent GitLab
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-docker-build:
+    name: Test Docker Compose Build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - uses: pixta-dev/repository-mirroring-action@v1
+      with:
+        target_repo_url:
+          git@git.cs.kent.ac.uk:ae469/dohexptlk.git
+        ssh_private_key:
+          ${{ secrets.SSH_PRIVATE_KEY }}
+
