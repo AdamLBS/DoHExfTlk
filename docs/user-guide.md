@@ -272,6 +272,23 @@ done
 
 ## 🤖 Machine Learning Analysis
 
+### Dataset Preparation
+
+**Using CIRA-CIC-DoHBrw-2020 Dataset:**
+```bash
+# 1. Download the CIRA-CIC-DoHBrw-2020 dataset
+# Source: https://www.unb.ca/cic/datasets/dohbrw-2020.html
+
+# 2. Extract CSV files to datasets directory
+mkdir -p datasets/
+# Place the downloaded CSV files in datasets/
+# Expected files: CSV files containing network flow features
+
+# 3. Verify dataset structure
+head -5 datasets/*.csv
+# Should contain columns like: Duration, FlowBytesSent, PacketLengthMean, Label, etc.
+```
+
 ### Training Models
 ```bash
 # Enter ML analyzer container
@@ -283,7 +300,7 @@ cd /ml
 # Quick training (limited dataset)
 python3 model_trainer.py --quick
 
-# Full training (complete dataset)
+# Full training (complete dataset using CIRA-CIC-DoHBrw-2020)
 python3 model_trainer.py
 ```
 

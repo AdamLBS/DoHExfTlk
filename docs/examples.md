@@ -276,14 +276,42 @@ cat prediction_results.json
 
 ### Custom Dataset Training
 ```bash
-# Add your own datasets
-cp your_network_data.csv datasets/custom_data.csv
+# Using CIRA-CIC-DoHBrw-2020 dataset
+# 1. Download dataset from: https://www.unb.ca/cic/datasets/dohbrw-2020.html
 
-# Ensure proper format (must have 'Label' column)
-head -5 datasets/custom_data.csv
+# 2. Place CSV files in datasets directory
+ls -la datasets/
+# Expected: CSV files from CIRA-CIC-DoHBrw-2020 dataset
 
-# Train with new data
+# 3. Verify dataset format
+head -5 datasets/l2-benign.csv
+head -5 datasets/l2-malicious.csv
+
+# 4. Train with the dataset
+cd ml_analyzer/
 python3 model_trainer.py
+
+# 5. Check model performance
+cat ml_reports/*.txt
+```
+
+### Dataset Feature Analysis
+```bash
+# Analyze CIRA-CIC-DoHBrw-2020 dataset features
+python3 -c "
+import pandas as pd
+import glob
+
+# Load all CSV files
+csv_files = glob.glob('datasets/*.csv')
+for file in csv_files:
+    print(f'\\n=== {file} ===')
+    df = pd.read_csv(file)
+    print(f'Shape: {df.shape}')
+    print(f'Columns: {list(df.columns)}')
+    if 'Label' in df.columns:
+        print(f'Labels: {df[\"Label\"].value_counts()}')
+"
 ```
 
 ## 📊 Analysis Examples

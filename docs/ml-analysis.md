@@ -6,6 +6,25 @@ The ML component of the DoH Exfiltration Detection Platform uses supervised lear
 
 ## 📊 Dataset and Features
 
+### CIRA-CIC-DoHBrw-2020 Dataset
+
+The platform uses the **CIRA-CIC-DoHBrw-2020** dataset for training and evaluation:
+
+**Dataset Information:**
+- **Source**: https://www.unb.ca/cic/datasets/dohbrw-2020.html
+- **Provider**: Canadian Institute for Cybersecurity (CIC)
+- **Content**: Comprehensive DoH traffic flows (benign and malicious)
+- **Format**: CSV files with extracted network flow features
+- **Size**: Multiple CSV files containing thousands of labeled flow records
+- **Location**: CSV files should be placed in the `datasets/` directory
+
+**Key Features:**
+- Real-world DoH traffic captures
+- Balanced dataset with benign and malicious samples
+- Comprehensive feature set for flow-based analysis
+- Pre-labeled data for supervised learning
+- Suitable for binary and multi-class classification
+
 ### Dataset Structure
 The platform works with network flow datasets containing statistical features extracted from DoH traffic:
 

@@ -178,11 +178,19 @@ The exfiltration techniques demonstrated here could be detected by:
 
 ## 💾 Data Questions
 
+### What dataset does the platform use?
+The platform uses the **CIRA-CIC-DoHBrw-2020** dataset:
+- **Source**: https://www.unb.ca/cic/datasets/dohbrw-2020.html
+- **Content**: Network flow features from benign and malicious DoH traffic
+- **Format**: CSV files with labeled data
+- **Purpose**: Training machine learning models for classification
+- **Location**: Place CSV files in the `datasets/` directory
+
 ### Where is data stored?
+- **Training Dataset**: `datasets/` (CIRA-CIC-DoHBrw-2020 CSV files)
 - **Detected Files**: `exfiltration/server/captured/`
 - **Traffic Analysis**: `traffic_analyzer/output/`
 - **ML Models**: `models/`
-- **Datasets**: `datasets/`
 
 ### How is data cleaned up?
 Manual cleanup is required:

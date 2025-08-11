@@ -83,6 +83,7 @@ docker exec -it client_test bash /scripts/test_exfiltration.sh
 | [🤖 Machine Learning](docs/ml-analysis.md) | ML models, training, and classification |
 | [📊 Data Analysis](docs/data-analysis.md) | Traffic analysis and pattern detection |
 | [🛠️ Development Guide](docs/development.md) | Developer setup and contribution guide |
+| [🔍 Exfiltration ](docs/exfiltration.md) | File exfiltration guide |
 | [❓ FAQ](docs/faq.md) | Frequently asked questions |
 | [🔧 Troubleshooting](docs/troubleshooting.md) | Common issues and solutions |
 | [📋 Examples](docs/examples.md) | Usage examples and scenarios |

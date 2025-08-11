@@ -57,9 +57,23 @@ Kent-Dissertation/
 
 ## 🔄 Development Workflow
 
+### 0. Dataset Preparation
+```bash
+# Download CIRA-CIC-DoHBrw-2020 dataset
+# Source: https://www.unb.ca/cic/datasets/dohbrw-2020.html
+
+# Place CSV files in datasets directory
+mkdir -p datasets/
+# Copy downloaded CSV files to datasets/
+
+# Verify dataset structure
+head -5 datasets/*.csv
+# Should contain network flow features and Label column
+```
+
 ### 1. ML Model Development
 ```bash
-# Train models on network flow data
+# Train models on CIRA-CIC-DoHBrw-2020 dataset
 cd ml_analyzer
 python3 model_trainer.py
 
