@@ -208,7 +208,6 @@ python run_client.py --config quick_test.json --file custom_data.txt
     "financial_records.xlsx",
     "employee_data.csv"
   ],
-  "detection_expected": false,
   "notes": "Simulation APT : très lents délais, rotation domaines, chiffrement"
 }
 ```

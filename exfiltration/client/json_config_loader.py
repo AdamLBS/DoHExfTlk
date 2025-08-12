@@ -235,7 +235,6 @@ class JSONConfigLoader:
                 "subdomain_randomization": False
             },
             "test_files": ["sample.txt", "credentials.json"],
-            "detection_expected": True,
             "notes": "Basic configuration for detection system validation"
         }
         
@@ -261,7 +260,6 @@ class JSONConfigLoader:
                 "backup_domains": ["api-service.local", "media-content.local"]
             },
             "test_files": ["database_dump.sql", "api_keys.json"],
-            "detection_expected": False,
             "notes": "Advanced evasion techniques: small chunks, variable timing, encryption"
         }
         
@@ -283,7 +281,6 @@ class JSONConfigLoader:
                 "max_retries": 5
             },
             "test_files": ["large_dataset.csv", "backup.zip"],
-            "detection_expected": True,
             "notes": "Burst pattern to test temporal anomaly detection"
         }
         
@@ -313,7 +310,6 @@ class JSONConfigLoader:
                 "padding_size": 20
             },
             "test_files": ["financial_records.xlsx", "employee_data.csv"],
-            "detection_expected": False,
             "notes": "APT simulation: very slow delays, domain rotation, encryption"
         }
         
@@ -336,7 +332,6 @@ class JSONConfigLoader:
                 "timeout": 2.0
             },
             "test_files": ["speed_test_file.bin"],
-            "detection_expected": True,
             "notes": "Configuration to measure maximum exfiltration speed"
         }
         
@@ -551,7 +546,6 @@ def main():
         print(f"Loaded stealth scenario:")
         print(f"   - Name: {scenario['name']}")
         print(f"   - Description: {scenario['description']}")
-        print(f"   - Detection expected: {scenario['detection_expected']}")
     
     print(f"\nUsage examples:")
     print(f"   python json_config_loader.py")

@@ -25,6 +25,5 @@
     "database_dump.sql",
     "api_keys.json"
   ],
-  "detection_expected": false,
   "notes": "Techniques d'évasion avancées : petits chunks, timing variable, chiffrement"
 }

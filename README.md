@@ -181,8 +181,7 @@ python config_generator.py --test apt_simulation.json
     "encryption": true,
     "domain_rotation": true,
     "backup_domains": ["security-updates.local", "maintenance-api.local"]
-  },
-  "detection_expected": false
+  }
 }
 ```
 

@@ -237,8 +237,7 @@ The configuration format supports comprehensive exfiltration scenarios:
   "test_files": [
     "financial_records.xlsx",
     "employee_data.csv"
-  ],
-  "detection_expected": false,
+  ]
   "notes": "Simulation APT : très lents délais, rotation domaines, chiffrement"
 }
 ```
@@ -249,7 +248,6 @@ The configuration format supports comprehensive exfiltration scenarios:
 - **`name`**: Configuration identifier
 - **`description`**: Human-readable description
 - **`test_files`**: Files to use for testing
-- **`detection_expected`**: Whether ML detection is expected
 - **`notes`**: Research notes and context
 
 #### Exfiltration Configuration
@@ -291,8 +289,7 @@ The configuration format supports comprehensive exfiltration scenarios:
     "encryption": false,
     "subdomain_randomization": true
   },
-  "test_files": ["sample.txt"],
-  "detection_expected": true,
+  "test_files": ["sample.txt"]
   "notes": "Configuration de base pour validation rapide"
 }
 ```
@@ -319,8 +316,7 @@ The configuration format supports comprehensive exfiltration scenarios:
     "domain_rotation": true,
     "backup_domains": ["api-cache.local", "media-cdn.local"]
   },
-  "test_files": ["sensitive_data.json", "credentials.txt"],
-  "detection_expected": false,
+  "test_files": ["sensitive_data.json", "credentials.txt"]
   "notes": "Techniques d'évasion avancées pour contourner la détection ML"
 }
 ```
@@ -346,7 +342,6 @@ The configuration format supports comprehensive exfiltration scenarios:
     "timeout": 2.0
   },
   "test_files": ["large_file.bin"],
-  "detection_expected": true,
   "notes": "Test de vitesse maximale - facilement détectable"
 }
 ```

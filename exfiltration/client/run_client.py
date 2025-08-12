@@ -63,9 +63,6 @@ def test_integration_with_config(file_path=None, config_file=None, scenario_name
                     config = scenario['exfiltration_config']
                     config_source = f"scenario '{scenario['name']}'"
                     logger.info(f"📝 Scenario description: {scenario['description']}")
-                    if 'detection_expected' in scenario:
-                        detection = "High" if scenario['detection_expected'] else "Low"
-                        logger.info(f"🎯 Expected detection level: {detection}")
                 else:
                     logger.error(f"❌ Failed to load scenario: {scenario_name}")
                     return False

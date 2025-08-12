@@ -16,6 +16,5 @@
     "sample.txt",
     "credentials.json"
   ],
-  "detection_expected": true,
   "notes": "Configuration de base pour validation du système de détection"
 }

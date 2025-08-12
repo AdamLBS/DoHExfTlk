@@ -332,7 +332,6 @@ cat > test_debug.json << 'EOF'
     "base_delay": 0.5
   },
   "test_files": ["debug_test.txt"],
-  "detection_expected": true,
   "notes": "Debug configuration for troubleshooting"
 }
 EOF

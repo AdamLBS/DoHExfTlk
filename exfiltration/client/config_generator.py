@@ -24,7 +24,6 @@ def create_evasion_config():
         "description": "",
         "exfiltration_config": {},
         "test_files": [],
-        "detection_expected": False,
         "notes": ""
     }
     
@@ -99,7 +98,6 @@ def create_evasion_config():
     if test_files:
         config["test_files"] = [f.strip() for f in test_files.split(',')]
     
-    config["detection_expected"] = input("Detection expected [y/N]: ").lower().startswith('y')
     config["notes"] = input("Research notes: ").strip()
     
     return config
@@ -149,7 +147,6 @@ def list_configs():
     for config_file in sorted(configs):
         try:
             config = load_config(config_file)
-            detection = "High" if config.get("detection_expected", False) else "Low"
             
             exfil_config = config.get("exfiltration_config", {})
             chunk_size = exfil_config.get("chunk_size", "?")
@@ -185,7 +182,6 @@ def create_template_configs():
                 "subdomain_randomization": True
             },
             "test_files": ["sample.txt"],
-            "detection_expected": True,
             "notes": "Basic configuration for quick validation"
         },
         {
@@ -209,7 +205,6 @@ def create_template_configs():
                 "backup_domains": ["api-cache.local", "media-cdn.local"]
             },
             "test_files": ["sensitive_data.json", "credentials.txt"],
-            "detection_expected": False,
             "notes": "Advanced evasion techniques to bypass ML detection"
         },
         {
@@ -231,7 +226,6 @@ def create_template_configs():
                 "timeout": 2.0
             },
             "test_files": ["large_file.bin"],
-            "detection_expected": True,
             "notes": "Maximum speed test - easily detectable"
         }
     ]

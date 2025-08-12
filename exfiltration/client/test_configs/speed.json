@@ -18,6 +18,5 @@
   "test_files": [
     "speed_test_file.bin"
   ],
-  "detection_expected": true,
   "notes": "Configuration pour mesurer la vitesse maximale d'exfiltration"
 }

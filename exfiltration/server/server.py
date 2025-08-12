@@ -19,6 +19,7 @@ class SimpleExfiltrationServer:
     def __init__(self, output_dir="/app/captured", interface=None):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
+        os.chown(self.output_dir, 1000, 1000)
         self.interface = interface or os.environ.get('INTERFACE', 'eth0')
         
         # Reconstruction sessions

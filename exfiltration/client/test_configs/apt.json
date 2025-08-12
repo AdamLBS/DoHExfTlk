@@ -26,6 +26,5 @@
     "financial_records.xlsx",
     "employee_data.csv"
   ],
-  "detection_expected": false,
   "notes": "Simulation APT : très lents délais, rotation domaines, chiffrement"
 }

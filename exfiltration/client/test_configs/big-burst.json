@@ -8,7 +8,7 @@
     "encoding": "base64",
     "timing_pattern": "burst",
     "base_delay": 0.1,
-    "compression": true,
+    "compression": false,
     "encryption": false,
     "subdomain_randomization": false,
     "padding": false,
@@ -19,6 +19,5 @@
   "test_files": [
     "/app/test_data/image.png"
   ],
-  "detection_expected": false,
   "notes": ""
 }

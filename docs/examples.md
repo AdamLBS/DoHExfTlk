@@ -123,7 +123,6 @@ python config_generator.py --list
     "financial_records.xlsx",
     "employee_data.csv"
   ],
-  "detection_expected": false,
   "notes": "Simulation APT : très lents délais, rotation domaines, chiffrement"
 }
 ```
@@ -146,7 +145,6 @@ python config_generator.py --list
     "subdomain_randomization": false
   },
   "test_files": ["large_file.bin"],
-  "detection_expected": true,
   "notes": "Test de vitesse maximale - facilement détectable"
 }
 ```
@@ -174,7 +172,6 @@ python config_generator.py --list
     "backup_domains": ["api-cache.local", "media-cdn.local"]
   },
   "test_files": ["sensitive_data.json", "credentials.txt"],
-  "detection_expected": false,
   "notes": "Techniques d'évasion avancées pour contourner la détection ML"
 }
 ```
