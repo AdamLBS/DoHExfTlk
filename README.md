@@ -63,7 +63,7 @@ This research platform enables the study and detection of data exfiltration tech
 
 ```bash
 # 1. Clone the project
-git clone <repository-url>
+git clone git@github.com:AdamLBS/DohExfTlk.git
 cd DoHExfTlk
 
 # 2. Generate TLS certificates
