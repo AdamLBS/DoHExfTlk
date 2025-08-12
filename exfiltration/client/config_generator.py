@@ -2,8 +2,8 @@
 """
 DoH Evasion Configuration Generator
 
-Outil pour créer, modifier et tester des configurations d'évasion DoH
-pour les tests de recherche en sécurité.
+Tool for creating, modifying and testing DoH evasion configurations
+for security research testing.
 """
 
 import argparse
@@ -15,8 +15,8 @@ from pathlib import Path
 from typing import Dict, Any
 
 def create_evasion_config():
-    """Interface interactive pour créer une configuration d'évasion"""
-    print("🔧 DoH Evasion Configuration Generator")
+    """Interactive interface to create an evasion configuration"""
+    print("DoH Evasion Configuration Generator")
     print("=" * 50)
     
     config = {
@@ -28,84 +28,84 @@ def create_evasion_config():
         "notes": ""
     }
     
-    # Informations de base
-    config["name"] = input("📝 Nom de la configuration: ").strip()
-    config["description"] = input("📋 Description: ").strip()
+    # Basic information
+    config["name"] = input("Configuration name: ").strip()
+    config["description"] = input("Description: ").strip()
     
-    # Configuration d'exfiltration
-    print("\n⚙️ Configuration d'exfiltration:")
+    # Exfiltration configuration
+    print("\nExfiltration configuration:")
     
-    # Serveur et domaine
-    config["exfiltration_config"]["doh_server"] = input("🌐 Serveur DoH [https://doh.local/dns-query]: ").strip() or "https://doh.local/dns-query"
-    config["exfiltration_config"]["target_domain"] = input("🎯 Domaine cible [exfill.local]: ").strip() or "exfill.local"
+    # Server and domain
+    config["exfiltration_config"]["doh_server"] = input("DoH Server [https://doh.local/dns-query]: ").strip() or "https://doh.local/dns-query"
+    config["exfiltration_config"]["target_domain"] = input("Target domain [exfill.local]: ").strip() or "exfill.local"
     
-    # Taille des chunks
-    chunk_size = input("📦 Taille des chunks [30]: ").strip()
+    # Chunk size
+    chunk_size = input("Chunk size [30]: ").strip()
     config["exfiltration_config"]["chunk_size"] = int(chunk_size) if chunk_size else 30
     
-    # Encodage
-    print("🔢 Encodage disponible: base64, hex, base32, custom")
-    encoding = input("   Sélection [base64]: ").strip() or "base64"
+    # Encoding
+    print("Available encoding: base64, hex, base32, custom")
+    encoding = input("   Selection [base64]: ").strip() or "base64"
     config["exfiltration_config"]["encoding"] = encoding
     
-    # Pattern de timing
-    print("⏱️ Patterns de timing: regular, random, burst, stealth")
-    timing = input("   Sélection [regular]: ").strip() or "regular"
+    # Timing pattern
+    print("Timing patterns: regular, random, burst, stealth")
+    timing = input("   Selection [regular]: ").strip() or "regular"
     config["exfiltration_config"]["timing_pattern"] = timing
     
-    # Délai de base
-    delay = input("⏲️ Délai de base en secondes [0.2]: ").strip()
+    # Base delay
+    delay = input("Base delay in seconds [0.2]: ").strip()
     config["exfiltration_config"]["base_delay"] = float(delay) if delay else 0.2
     
-    # Options d'évasion
-    print("\n🕵️ Options d'évasion:")
-    config["exfiltration_config"]["compression"] = input("🗜️ Compression [y/N]: ").lower().startswith('y')
-    config["exfiltration_config"]["encryption"] = input("🔐 Chiffrement [y/N]: ").lower().startswith('y')
+    # Evasion options
+    print("\nEvasion options:")
+    config["exfiltration_config"]["compression"] = input("Compression [y/N]: ").lower().startswith('y')
+    config["exfiltration_config"]["encryption"] = input("Encryption [y/N]: ").lower().startswith('y')
     
     if config["exfiltration_config"]["encryption"]:
-        encryption_key = input("🔑 Clé de chiffrement: ").strip()
+        encryption_key = input("Encryption key: ").strip()
         config["exfiltration_config"]["encryption_key"] = encryption_key or "default_key"
     
-    config["exfiltration_config"]["subdomain_randomization"] = input("🎲 Randomisation sous-domaines [Y/n]: ").lower() != 'n'
-    config["exfiltration_config"]["padding"] = input("📏 Padding [y/N]: ").lower().startswith('y')
+    config["exfiltration_config"]["subdomain_randomization"] = input("Subdomain randomization [Y/n]: ").lower() != 'n'
+    config["exfiltration_config"]["padding"] = input("Padding [y/N]: ").lower().startswith('y')
     
-    # Rotation de domaines
-    domain_rotation = input("🔄 Rotation de domaines [y/N]: ").lower().startswith('y')
+    # Domain rotation
+    domain_rotation = input("Domain rotation [y/N]: ").lower().startswith('y')
     config["exfiltration_config"]["domain_rotation"] = domain_rotation
     
     if domain_rotation:
-        backup_domains = input("🔗 Domaines de backup (séparés par virgules): ").strip()
+        backup_domains = input("Backup domains (comma separated): ").strip()
         if backup_domains:
             config["exfiltration_config"]["backup_domains"] = [d.strip() for d in backup_domains.split(',')]
         else:
             config["exfiltration_config"]["backup_domains"] = []
     
-    # Paramètres avancés pour timing spéciaux
+    # Advanced parameters for special timing
     if timing == "random":
-        variance = input("📊 Variance de délai [0.1]: ").strip()
+        variance = input("Delay variance [0.1]: ").strip()
         config["exfiltration_config"]["delay_variance"] = float(variance) if variance else 0.1
     elif timing == "burst":
-        burst_size = input("💥 Taille des rafales [5]: ").strip()
+        burst_size = input("Burst size [5]: ").strip()
         config["exfiltration_config"]["burst_size"] = int(burst_size) if burst_size else 5
-        burst_delay = input("⏳ Délai entre rafales [2.0]: ").strip()
+        burst_delay = input("Delay between bursts [2.0]: ").strip()
         config["exfiltration_config"]["burst_delay"] = float(burst_delay) if burst_delay else 2.0
     elif timing == "stealth":
-        variance = input("📊 Variance de délai pour furtivité [1.0]: ").strip()
+        variance = input("Delay variance for stealth [1.0]: ").strip()
         config["exfiltration_config"]["delay_variance"] = float(variance) if variance else 1.0
     
-    # Métadonnées
-    print("\n📋 Métadonnées:")
-    test_files = input("📁 Fichiers de test (séparés par virgules): ").strip()
+    # Metadata
+    print("\nMetadata:")
+    test_files = input("Test files (comma separated): ").strip()
     if test_files:
         config["test_files"] = [f.strip() for f in test_files.split(',')]
     
-    config["detection_expected"] = input("🚨 Détection attendue [y/N]: ").lower().startswith('y')
-    config["notes"] = input("📝 Notes de recherche: ").strip()
+    config["detection_expected"] = input("Detection expected [y/N]: ").lower().startswith('y')
+    config["notes"] = input("Research notes: ").strip()
     
     return config
 
 def save_config(config: Dict[str, Any], filename: str = None) -> str:
-    """Sauvegarde une configuration dans un fichier JSON"""
+    """Save configuration to a JSON file"""
     if not filename:
         safe_name = config["name"].lower().replace(" ", "_").replace("-", "_")
         filename = f"{safe_name}.json"
@@ -121,7 +121,7 @@ def save_config(config: Dict[str, Any], filename: str = None) -> str:
     return str(filepath)
 
 def load_config(filename: str) -> Dict[str, Any]:
-    """Charge une configuration depuis un fichier JSON"""
+    """Load configuration from a JSON file"""
     config_path = Path(filename)
     if not config_path.exists():
         config_path = Path("test_configs") / filename
@@ -132,47 +132,47 @@ def load_config(filename: str) -> Dict[str, Any]:
         return json.load(f)
 
 def list_configs():
-    """Liste toutes les configurations disponibles"""
+    """List all available configurations"""
     config_dir = Path("test_configs")
     if not config_dir.exists():
-        print("📁 Aucune configuration trouvée")
+        print("No configurations found")
         return
     
     configs = list(config_dir.glob("*.json"))
     if not configs:
-        print("📁 Aucune configuration trouvée")
+        print("No configurations found")
         return
     
-    print(f"📋 Configurations disponibles ({len(configs)}):")
+    print(f"Available configurations ({len(configs)}):")
     print("=" * 50)
     
     for config_file in sorted(configs):
         try:
             config = load_config(config_file)
-            detection = "🔴 High" if config.get("detection_expected", False) else "🟢 Low"
+            detection = "High" if config.get("detection_expected", False) else "Low"
             
             exfil_config = config.get("exfiltration_config", {})
             chunk_size = exfil_config.get("chunk_size", "?")
             encoding = exfil_config.get("encoding", "?")
             timing = exfil_config.get("timing_pattern", "?")
             
-            print(f"📄 {config_file.stem}")
-            print(f"   📝 {config.get('description', 'No description')}")
-            print(f"   ⚙️ Chunks: {chunk_size}, Encoding: {encoding}, Timing: {timing}")
-            print(f"   🎯 Detection: {detection}")
+            print(f"{config_file.stem}")
+            print(f"   {config.get('description', 'No description')}")
+            print(f"   Chunks: {chunk_size}, Encoding: {encoding}, Timing: {timing}")
+            print(f"   Detection: {detection}")
             if config.get("notes"):
-                print(f"   📋 Notes: {config['notes']}")
+                print(f"   Notes: {config['notes']}")
             print()
             
         except Exception as e:
-            print(f"❌ Erreur lors du chargement de {config_file}: {e}")
+            print(f"Error loading {config_file}: {e}")
 
 def create_template_configs():
-    """Crée des configurations de template pour différents scénarios"""
+    """Create template configurations for different scenarios"""
     templates = [
         {
             "name": "Quick Test",
-            "description": "Configuration rapide pour tests de base",
+            "description": "Quick configuration for basic tests",
             "exfiltration_config": {
                 "doh_server": "https://doh.local/dns-query",
                 "target_domain": "exfill.local",
@@ -186,11 +186,11 @@ def create_template_configs():
             },
             "test_files": ["sample.txt"],
             "detection_expected": True,
-            "notes": "Configuration de base pour validation rapide"
+            "notes": "Basic configuration for quick validation"
         },
         {
             "name": "Stealth Research",
-            "description": "Configuration furtive pour recherche d'évasion",
+            "description": "Stealth configuration for evasion research",
             "exfiltration_config": {
                 "doh_server": "https://doh.local/dns-query",
                 "target_domain": "cdn-service.local",
@@ -210,11 +210,11 @@ def create_template_configs():
             },
             "test_files": ["sensitive_data.json", "credentials.txt"],
             "detection_expected": False,
-            "notes": "Techniques d'évasion avancées pour contourner la détection ML"
+            "notes": "Advanced evasion techniques to bypass ML detection"
         },
         {
             "name": "Speed Benchmark",
-            "description": "Configuration optimisée pour vitesse maximale",
+            "description": "Configuration optimized for maximum speed",
             "exfiltration_config": {
                 "doh_server": "https://doh.local/dns-query",
                 "target_domain": "fast-api.local",
@@ -232,7 +232,7 @@ def create_template_configs():
             },
             "test_files": ["large_file.bin"],
             "detection_expected": True,
-            "notes": "Test de vitesse maximale - facilement détectable"
+            "notes": "Maximum speed test - easily detectable"
         }
     ]
     
@@ -250,68 +250,68 @@ def create_template_configs():
             created.append(filename)
     
     if created:
-        print(f"✅ Configurations template créées: {', '.join(created)}")
+        print(f"Template configurations created: {', '.join(created)}")
     else:
-        print("ℹ️ Toutes les configurations template existent déjà")
+        print("All template configurations already exist")
 
 def test_config(config_file: str, test_file: str = None):
-    """Teste une configuration avec un fichier"""
+    """Test a configuration with a file"""
     try:
         config = load_config(config_file)
-        print(f"🧪 Test de la configuration: {config['name']}")
-        print(f"📝 Description: {config['description']}")
+        print(f"Testing configuration: {config['name']}")
+        print(f"Description: {config['description']}")
         
         if not test_file:
-            # Créer un fichier de test temporaire
+            # Create temporary test file
             test_file = "temp_test_file.txt"
             with open(test_file, 'w') as f:
                 f.write("Test data for DoH exfiltration configuration validation.\n")
                 f.write("This file will be used to test the JSON configuration.\n")
                 f.write("Configuration: " + config['name'] + "\n")
                 f.write("Timestamp: " + str(time.time()) + "\n")
-            print(f"📁 Fichier de test créé: {test_file}")
+            print(f"Test file created: {test_file}")
         
-        # Utiliser le script de test avec la configuration
+        # Use test script with configuration
         import subprocess
         cmd = [sys.executable, "run_client.py", "--config", config_file, test_file]
         result = subprocess.run(cmd, capture_output=True, text=True)
         
         if result.returncode == 0:
-            print("✅ Test réussi!")
+            print("Test successful!")
         else:
-            print("❌ Test échoué:")
+            print("Test failed:")
             print(result.stderr)
         
-        # Nettoyer le fichier temporaire
+        # Clean up temporary file
         if test_file == "temp_test_file.txt" and os.path.exists(test_file):
             os.remove(test_file)
             
     except Exception as e:
-        print(f"❌ Erreur lors du test: {e}")
+        print(f"Test error: {e}")
 
 def main():
-    """Fonction principale avec interface en ligne de commande"""
+    """Main function with command line interface"""
     parser = argparse.ArgumentParser(description='DoH Evasion Configuration Generator')
     parser.add_argument('--create', action='store_true',
-                       help='Créer une nouvelle configuration interactivement')
+                       help='Create a new configuration interactively')
     parser.add_argument('--list', action='store_true',
-                       help='Lister toutes les configurations disponibles')
+                       help='List all available configurations')
     parser.add_argument('--templates', action='store_true',
-                       help='Créer les configurations template')
+                       help='Create template configurations')
     parser.add_argument('--test', metavar='CONFIG',
-                       help='Tester une configuration')
+                       help='Test a configuration')
     parser.add_argument('--file', metavar='FILE',
-                       help='Fichier à utiliser pour le test')
+                       help='File to use for testing')
     parser.add_argument('--edit', metavar='CONFIG',
-                       help='Éditer une configuration existante')
+                       help='Edit an existing configuration')
     
     args = parser.parse_args()
     
     if args.create:
-        print("🎯 Création d'une nouvelle configuration d'évasion DoH")
+        print("Creating new DoH evasion configuration")
         config = create_evasion_config()
         filepath = save_config(config)
-        print(f"\n✅ Configuration sauvegardée: {filepath}")
+        print(f"\nConfiguration saved: {filepath}")
         
     elif args.list:
         list_configs()
@@ -325,11 +325,11 @@ def main():
     elif args.edit:
         try:
             config = load_config(args.edit)
-            print(f"📝 Édition de: {config['name']}")
-            print("💡 Appuyez sur Entrée pour garder la valeur actuelle")
+            print(f"Editing: {config['name']}")
+            print("Press Enter to keep current value")
             
-            # Interface d'édition simplifiée
-            new_name = input(f"Nom [{config['name']}]: ").strip()
+            # Simplified editing interface
+            new_name = input(f"Name [{config['name']}]: ").strip()
             if new_name:
                 config['name'] = new_name
             
@@ -337,24 +337,24 @@ def main():
             if new_desc:
                 config['description'] = new_desc
             
-            # Sauvegarder
+            # Save
             filepath = save_config(config)
-            print(f"✅ Configuration mise à jour: {filepath}")
+            print(f"Configuration updated: {filepath}")
             
         except Exception as e:
-            print(f"❌ Erreur lors de l'édition: {e}")
+            print(f"Editing error: {e}")
         
     else:
-        print("🔧 DoH Evasion Configuration Generator")
+        print("DoH Evasion Configuration Generator")
         print("=" * 40)
-        print("📋 Options disponibles:")
-        print("  --create      Créer une nouvelle configuration")
-        print("  --list        Lister les configurations")
-        print("  --templates   Créer les templates de base")
-        print("  --test CONFIG Tester une configuration")
-        print("  --edit CONFIG Éditer une configuration")
+        print("Available options:")
+        print("  --create      Create a new configuration")
+        print("  --list        List configurations")
+        print("  --templates   Create base templates")
+        print("  --test CONFIG Test a configuration")
+        print("  --edit CONFIG Edit a configuration")
         print()
-        print("💡 Exemples d'utilisation:")
+        print("Usage examples:")
         print("  python config_generator.py --create")
         print("  python config_generator.py --list")
         print("  python config_generator.py --test stealth_research.json")
