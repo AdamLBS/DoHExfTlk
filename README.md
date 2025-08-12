@@ -204,20 +204,6 @@ python config_generator.py --test apt_simulation.json
 python run_client.py --config test_configs/apt_simulation.json
 ```
 
-## Metrics and results
-
-### Detection performance
-- **Accuracy**: >95% on training datasets
-- **False Positives**: <3% with optimization
-- **Detection time**: <1s for simple patterns
-- **Reconstruction**: 99% success rate
-
-### Technical capabilities
-- **Max throughput**: 1000+ queries/minute
-- **File sizes**: Up to 100MB
-- **Supported formats**: Text, binary, images, documents
-- **Encodings**: Base64, Hex, Base32, custom
-
 ## Security considerations
 
 **EDUCATIONAL USE ONLY**
