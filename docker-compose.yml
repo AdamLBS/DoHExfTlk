@@ -9,7 +9,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "8080:8080"  # Dashboard Traefik
+      - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./certs:/certs:ro
@@ -43,7 +43,6 @@ services:
       - "traefik.http.routers.doh.entrypoints=websecure"
       - "traefik.http.routers.doh.tls=true"
       - "traefik.http.services.doh.loadbalancer.server.port=8053"
-      # Redirection HTTP vers HTTPS
       - "traefik.http.routers.doh-http.rule=Host(`doh.local`)"
       - "traefik.http.routers.doh-http.entrypoints=web"
       - "traefik.http.routers.doh-http.middlewares=redirect-to-https"
@@ -80,7 +79,6 @@ services:
       - DOH_SERVER=https://doh.local/dns-query
       - PYTHONUNBUFFERED=1
 
-  # Service d'interception du trafic DoH pour capturer l'exfiltration
   exfil_interceptor:
     build: 
       context: ./exfiltration/server/
@@ -103,7 +101,6 @@ services:
       - resolver
       - doh_server
       
-  # Analyseur de trafic DoH avec DoHLyzer
   traffic_analyzer:
     build:
       context: ./traffic_analyzer
@@ -124,7 +121,6 @@ services:
       - doh_server
       - traefik
 
-  # Client d'exfiltration pour les tests
   exfil_client:
     build:
       context: ./exfiltration/client
