@@ -2,53 +2,40 @@
 
 set -e
 
-
-# Méthode 1: Essayer de détecter l'interface veth du conteneur resolver
+# Method 1: Try to detect resolver container's veth interface
 
 if command -v docker &> /dev/null; then
-    # Récupérer l'iflink du conteneur resolver
+    # Get resolver container iflink
     IFLINK=$(docker exec traefik cat /sys/class/net/eth0/iflink 2>/dev/null || echo "")
     
     if [ -n "$IFLINK" ]; then
-        echo "[ℹ️] iflink du resolver: $IFLINK"
-        # Trouver l'interface correspondante sur l'hôte
+        # Find corresponding interface on host
         MATCH_LINE=$(ip link | grep -B1 "^ *$IFLINK:" 2>/dev/null || echo "")
         if [ -n "$MATCH_LINE" ]; then
             VETH_LINE=$(echo "$MATCH_LINE" | tail -n 1)
             IFACE=$(echo "$VETH_LINE" | awk '{print $2}' | awk -F'@' '{print $1}' | sed 's/:$//')
-            echo "[✅] Interface veth détectée : $IFACE"
+            echo "veth interface detected: $IFACE"
         else
-            echo "[⚠️] Interface veth non trouvée, utilisation de eth0"
+            echo "veth interface not found, using eth0"
             IFACE="eth0"
         fi
     else
-        echo "[⚠️] Impossible de récupérer l'iflink, utilisation de eth0"
+        echo "Cannot retrieve iflink, using eth0"
         IFACE="eth0"
     fi
 else
-    echo "[⚠️] Docker CLI non disponible, utilisation de eth0"
+    echo "Docker CLI not available, using eth0"
     IFACE="eth0"
 fi
 
-
-# Créer le répertoire de sortie
+# Create output directory
 mkdir -p "${OUTPUT_DIR:-/app/captured}"
-USER_ID="${USER_ID:-1000}"
-GROUP_ID="${GROUP_ID:-1000}"
-UMASK_VALUE="${UMASK_VALUE:-0002}"   # fichiers 664 / dossiers 775
 
-umask "$UMASK_VALUE"
-chown -R "$USER_ID:$GROUP_ID" "${OUTPUT_DIR:-/app/captured}" 2>/dev/null || true
-# Si setfacl est dispo, on met des ACL par défaut pour conserver les droits sur tout nouveau fichier/dossier
-if command -v setfacl >/dev/null 2>&1; then
-  setfacl -R -m u:$USER_ID:rwx,g:$GROUP_ID:rwx "${OUTPUT_DIR:-/app/captured}" 2>/dev/null || true
-  setfacl -R -d -m u:$USER_ID:rwx,g:$GROUP_ID:rwx "${OUTPUT_DIR:-/app/captured}" 2>/dev/null || true
-fi
-# Re-chown à la sortie (même si le script plante)
-trap 'chown -R "$USER_ID:$GROUP_ID" "${OUTPUT_DIR:-/app/captured}" 2>/dev/null || true' EXIT
-
-
-# Lancer le serveur d'exfiltration avec détection d'interface dynamique
+# Launch traffic analyzer with dynamic interface detection
 export INTERFACE="$IFACE"
+chown 1000:1000 "${OUTPUT_DIR:-/app/captured}"
+# Make it so that each new file created belongs to the user with UID 1000
+chmod 755 "${OUTPUT_DIR:-/app/captured}"
+# Ensure the output directory is accessible
 cd DoHLyzer
 python3 -m meter.dohlyzer --interface "$IFACE" -c ./../output/output.csv
