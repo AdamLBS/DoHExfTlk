@@ -14,11 +14,9 @@ import threading
 from pathlib import Path
 from traffic_interceptor import DoHTrafficInterceptor
 
-# Configuration du logging
 logging.basicConfig(
-    level=logging.DEBUG,  # Activer le debug
+    level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    force=True  # Force la reconfiguration du logging
 )
 logger = logging.getLogger(__name__)
 
@@ -169,10 +167,7 @@ class SimpleExfiltrationServer:
                         new_file_name = output_file.with_suffix(file_info['extension'])
                         output_file.rename(new_file_name)
                         logger.info(f"🔄 Fichier renommé: {new_file_name}")
-                    
-                    # Afficher l'aperçu selon le type
-                    self._display_file_preview(reconstructed_data, file_info)
-                    
+                                        
                     # Nettoyer la session
                     del self.sessions[session_id]
             else:
@@ -276,87 +271,8 @@ class SimpleExfiltrationServer:
                     'encoding': 'binary'
                 }
         
-        # Essayer de détecter du texte
-        try:
-            # Tenter UTF-8
-            text_content = data.decode('utf-8')
-            # Vérifier si c'est du texte lisible (pas trop de caractères de contrôle)
-            printable_ratio = sum(c.isprintable() or c.isspace() for c in text_content) / len(text_content)
-            
-            if printable_ratio > 0.8:  # 80% de caractères imprimables
-                # Détecter le type de texte
-                lower_content = text_content.lower()
-                if any(marker in lower_content for marker in ['<html', '<!doctype', '<xml']):
-                    return {'type': 'HTML/XML Document', 'encoding': 'utf-8', 'extension': '.html'}
-                elif any(marker in lower_content for marker in ['{', '}', '":', '[']):
-                    return {'type': 'JSON Data', 'encoding': 'utf-8', 'extension': '.json'}
-                elif any(marker in lower_content for marker in ['def ', 'import ', 'class ', 'print(']):
-                    return {'type': 'Python Code', 'encoding': 'utf-8', 'extension': '.py'}
-                elif any(marker in lower_content for marker in ['function', 'var ', 'const ', 'let ']):
-                    return {'type': 'JavaScript Code', 'encoding': 'utf-8', 'extension': '.js'}
-                elif any(marker in lower_content for marker in ['#!/bin/', '#include', 'int main']):
-                    return {'type': 'Source Code', 'encoding': 'utf-8', 'extension': '.c/.sh'}
-                else:
-                    return {'type': 'Plain Text', 'encoding': 'utf-8', 'extension': '.txt'}
-        except UnicodeDecodeError:
-            pass
-        
-        # Essayer d'autres encodages
-        for encoding in ['latin-1', 'cp1252', 'ascii']:
-            try:
-                text_content = data.decode(encoding)
-                printable_ratio = sum(c.isprintable() or c.isspace() for c in text_content) / len(text_content)
-                if printable_ratio > 0.8:
-                    return {'type': f'Text ({encoding})', 'encoding': encoding, 'extension': '.txt'}
-            except:
-                continue
-        
         # Par défaut, considérer comme binaire
         return {'type': 'Binary Data', 'encoding': 'binary', 'extension': '.bin'}
-    
-    def _display_file_preview(self, data, file_info):
-        """Affiche un aperçu approprié selon le type de fichier"""
-        try:
-            if file_info['encoding'] == 'binary':
-                # Affichage hexadécimal pour les fichiers binaires
-                hex_preview = data[:64].hex()
-                formatted_hex = ' '.join(hex_preview[i:i+2] for i in range(0, len(hex_preview), 2))
-                logger.info(f"📄 Aperçu hexadécimal: {formatted_hex}...")
-                
-                # Essayer d'afficher des caractères ASCII visibles
-                ascii_preview = ''
-                for byte in data[:64]:
-                    if 32 <= byte <= 126:  # Caractères ASCII imprimables
-                        ascii_preview += chr(byte)
-                    else:
-                        ascii_preview += '.'
-                
-                if ascii_preview.strip('.'):
-                    logger.info(f"📄 Aperçu ASCII: {ascii_preview}")
-                
-            else:
-                # Affichage texte pour les fichiers texte
-                text_content = data.decode(file_info['encoding'], errors='ignore')
-                
-                # Limiter l'aperçu et nettoyer
-                preview_lines = text_content[:500].split('\n')[:10]
-                clean_preview = '\n'.join(line.strip() for line in preview_lines if line.strip())
-                
-                logger.info(f"📄 Aperçu texte:")
-                for i, line in enumerate(clean_preview.split('\n')[:5]):
-                    if line:
-                        logger.info(f"   {i+1}: {line[:80]}{'...' if len(line) > 80 else ''}")
-                
-                # Statistiques pour les fichiers texte
-                lines_count = len(text_content.split('\n'))
-                words_count = len(text_content.split())
-                logger.info(f"📊 Statistiques: {lines_count} lignes, {words_count} mots")
-                
-        except Exception as e:
-            logger.warning(f"⚠️ Erreur affichage aperçu: {e}")
-            # Aperçu basique en cas d'erreur
-            basic_preview = str(data[:100])[:100]
-            logger.info(f"📄 Aperçu basique: {basic_preview}...")
     
     def start(self):
         """Démarre le serveur de capture"""

