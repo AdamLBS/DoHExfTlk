@@ -302,6 +302,7 @@ def main():
     
     # Configuration depuis les variables d'environnement
     output_dir = os.environ.get('OUTPUT_DIR', '/app/captured')
+    os.chown(output_dir, 1000, 1000)
     interface = os.environ.get('INTERFACE')
     
     # Créer et démarrer le serveur

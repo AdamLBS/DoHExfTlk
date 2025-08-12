@@ -22,6 +22,7 @@ class JSONConfigLoader:
     def __init__(self, config_dir: str = "test_configs"):
         self.config_dir = Path(config_dir)
         self.config_dir.mkdir(exist_ok=True)
+        os.chown(self.config_dir, 1000, 1000)
         
         # Create sample configurations if they don't exist
         self._create_sample_configs()
