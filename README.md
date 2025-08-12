@@ -204,22 +204,6 @@ python config_generator.py --test apt_simulation.json
 python run_client.py --config test_configs/apt_simulation.json
 ```
 
-### Main environment variables
-```bash
-# DoH Server
-DOH_SERVER=https://doh.local/dns-query
-TARGET_DOMAIN=exfill.local
-
-# Detection
-OUTPUT_DIR=/app/captured
-RESOLVER_MONITOR="port 53"
-TRAEFIK_MONITOR="port 443 and host traefik"
-
-# Machine Learning
-ML_MODEL_PATH=/models
-QUICK_MODE=false
-```
-
 ## Metrics and results
 
 ### Detection performance

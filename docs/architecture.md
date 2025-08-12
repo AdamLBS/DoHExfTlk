@@ -214,25 +214,6 @@ Client → Traefik → DoH Server → DNS Resolver
 /var/run/docker.sock:/var/run/docker.sock:ro
 ```
 
-### Environment Variables
-```yaml
-# DoH Configuration
-UPSTREAM_DNS_SERVER: "udp:resolver:53"
-DOH_HTTP_PREFIX: "/dns-query"
-DOH_SERVER_LISTEN: ":8053"
-
-# Detection Configuration
-OUTPUT_DIR: "/app/captured"
-DOH_DOMAINS: "doh.local,exfill.local"
-RESOLVER_MONITOR: "port 53"
-TRAEFIK_MONITOR: "port 443 and host traefik"
-
-# Client Configuration
-DOH_SERVER: "https://doh.local/dns-query"
-TARGET_DOMAIN: "exfill.local"
-LOCAL_NETWORK: "true"
-```
-
 ### Security Configuration
 ```yaml
 # Network isolation
