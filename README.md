@@ -1,5 +1,19 @@
 # Kent-Dissertation: DoH Exfiltration Detection Platform
 
+> **IMPORTANT DISCLAIMER - EDUCATIONAL AND RESEARCH USE ONLY**
+> 
+> This platform is developed exclusively for academic research, cybersecurity education, and authorized security testing in controlled environments. 
+> 
+> **The author disclaims all responsibility for any malicious, illegal, or unauthorized use of this tool.** Users are solely responsible for ensuring their use complies with applicable laws and regulations. This tool should only be used on systems you own or have explicit written permission to test.
+> 
+> **By using this platform, you acknowledge that:**
+> - You will use it only for legitimate educational, research, or authorized testing purposes
+> - You understand the legal and ethical implications of cybersecurity testing
+> - You will not use this tool for any malicious activities or unauthorized access
+> - You assume full responsibility for your actions and any consequences thereof
+
+---
+
 > **Complete platform for data exfiltration detection via DNS-over-HTTPS (DoH)**  
 > *Cybersecurity research toolkit for analysis and detection of advanced exfiltration techniques*
 
@@ -7,18 +21,18 @@
 [![Python](https://img.shields.io/badge/Python-3.8+-green.svg)](https://python.org/)
 [![License](https://img.shields.io/badge/License-Educational-orange.svg)](#)
 
-## 📋 Overview
+## Overview
 
 This research platform enables the study and detection of data exfiltration techniques using DNS-over-HTTPS (DoH). It combines multiple complementary approaches: network traffic capture, behavioral analysis, machine learning, and data reconstruction.
 
-### 🎯 Project objectives
+### Project objectives
 
 - **Academic research**: Study of DoH exfiltration techniques
 - **Advanced detection**: Combination of traditional and ML methods
 - **Forensic analysis**: Reconstruction and analysis of exfiltrated data
 - **Training**: Controlled environment for cybersecurity learning
 
-## 🏗️ System architecture
+## System architecture
 
 ```
 ┌─────────────────┬─────────────────┬─────────────────┐
@@ -38,7 +52,7 @@ This research platform enables the study and detection of data exfiltration tech
                     └───────────────┘
 ```
 
-## 🚀 Quick start
+## Quick start
 
 ### Prerequisites
 - Docker & Docker Compose
@@ -73,22 +87,22 @@ docker exec -it client_test bash /scripts/test_doh.sh
 docker exec -it client_test bash /scripts/test_exfiltration.sh
 ```
 
-## 📚 Complete Documentation
+## Complete Documentation
 
 | Document | Description |
 |----------|-------------|
-| [📖 User Guide](docs/user-guide.md) | Complete usage instructions and workflows |
-| [🏗️ Technical Architecture](docs/architecture.md) | Infrastructure details and design |
-| [🔧 Configuration Guide](docs/configuration.md) | Component configuration and customization |
-| [🤖 Machine Learning](docs/ml-analysis.md) | ML models, training, and classification |
-| [📊 Data Analysis](docs/data-analysis.md) | Traffic analysis and pattern detection |
-| [🛠️ Development Guide](docs/development.md) | Developer setup and contribution guide |
-| [🔍 Exfiltration ](docs/exfiltration.md) | File exfiltration guide |
-| [❓ FAQ](docs/faq.md) | Frequently asked questions |
-| [🔧 Troubleshooting](docs/troubleshooting.md) | Common issues and solutions |
-| [📋 Examples](docs/examples.md) | Usage examples and scenarios |
+| [User Guide](docs/user-guide.md) | Complete usage instructions and workflows |
+| [Technical Architecture](docs/architecture.md) | Infrastructure details and design |
+| [Configuration Guide](docs/configuration.md) | Component configuration and customization |
+| [Machine Learning](docs/ml-analysis.md) | ML models, training, and classification |
+| [Data Analysis](docs/data-analysis.md) | Traffic analysis and pattern detection |
+| [Development Guide](docs/development.md) | Developer setup and contribution guide |
+| [Exfiltration ](docs/exfiltration.md) | File exfiltration guide |
+| [FAQ](docs/faq.md) | Frequently asked questions |
+| [Troubleshooting](docs/troubleshooting.md) | Common issues and solutions |
+| [Examples](docs/examples.md) | Usage examples and scenarios |
 
-## 🧩 Main components
+## Main components
 
 ### DoH Infrastructure
 - **DoH Server**: DNS-over-HTTPS server with TLS
@@ -107,14 +121,14 @@ docker exec -it client_test bash /scripts/test_exfiltration.sh
 - **Test Scenarios**: APT simulation, stealth research, speed benchmarks
 - **Test Scripts**: Automated testing and validation tools
 
-## 📊 Detection features
+## Detection features
 
 ### Traditional methods
 - **Pattern analysis**: Detection of suspicious DNS structures
 - **Temporal analysis**: Identification of abnormal rhythms
 - **Content analysis**: Suspicious Base64 encoding detection
 
-## 🤖 Machine Learning Workflow
+## Machine Learning Workflow
 
 ### Training Phase
 ```bash
@@ -147,7 +161,7 @@ The ML pipeline validates whether DoHLyzer-detected queries are truly malicious 
 - **File type detection**: Automatic identification and analysis
 - **ML validation**: Classification of detected queries as malicious/benign
 
-## 🎛️ Configuration Management
+## Configuration Management
 
 ### JSON-based Configuration System
 ```bash
@@ -206,7 +220,7 @@ ML_MODEL_PATH=/models
 QUICK_MODE=false
 ```
 
-## 📈 Metrics and results
+## Metrics and results
 
 ### Detection performance
 - **Accuracy**: >95% on training datasets
@@ -220,18 +234,18 @@ QUICK_MODE=false
 - **Supported formats**: Text, binary, images, documents
 - **Encodings**: Base64, Hex, Base32, custom
 
-## 🔒 Security considerations
+## Security considerations
 
-⚠️ **EDUCATIONAL USE ONLY**
+**EDUCATIONAL USE ONLY**
 
 This platform is designed for:
-- ✅ Academic research
-- ✅ Cybersecurity training
-- ✅ Authorized testing in controlled environment
-- ❌ No malicious use
-- ❌ No unauthorized surveillance
+- Academic research
+- Cybersecurity training
+- Authorized testing in controlled environment
+- No malicious use
+- No unauthorized surveillance
 
-## 🛠️ Development and contribution
+## Development and contribution
 
 ### Code structure
 ```
@@ -256,21 +270,21 @@ python -m pytest tests/
 ./scripts/benchmark.sh
 ```
 
-## 📋 Roadmap
+## Roadmap
 
 ### Current version (v1.0)
-- ✅ Complete DoH infrastructure
-- ✅ Pattern detection
-- ✅ Basic Machine Learning
-- ✅ Data reconstruction
+- Complete DoH infrastructure
+- Pattern detection
+- Basic Machine Learning
+- Data reconstruction
 
 ### Next versions
-- 🔄 Advanced real-time detection
-- 🔄 Deep learning behavioral analysis
-- 🔄 Web monitoring interface
-- 🔄 REST API for integrations
+- Advanced real-time detection
+- Deep learning behavioral analysis
+- Web monitoring interface
+- REST API for integrations
 
-## 📞 Support and resources
+## Support and resources
 
 ### Documentation
 - [Complete FAQ](docs/faq.md)
@@ -282,7 +296,7 @@ python -m pytest tests/
 - Discussions for general questions
 - Wiki for collaborative documentation
 
-## 📄 License and citations
+## License and citations
 
 This project is developed in an academic context. For any academic use, please cite:
 
@@ -298,4 +312,4 @@ This project is developed in an academic context. For any academic use, please c
 
 ---
 
-**⚠️ Important reminder**: This platform is exclusively intended for research, education and authorized testing. Use for malicious activities is strictly prohibited and contrary to the spirit of the project.
+**IMPORTANT REMINDER**: This platform is exclusively intended for research, education and authorized testing. The author disclaims all responsibility for any malicious, illegal, or unauthorized use of this tool. Users assume full responsibility for their actions and must ensure compliance with all applicable laws and regulations.
