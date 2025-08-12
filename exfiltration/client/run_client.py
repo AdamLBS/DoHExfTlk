@@ -34,7 +34,7 @@ def test_integration_with_config(file_path=None, config_file=None, scenario_name
     try:
         # Import our client
         sys.path.append('/app')
-        from client import DoHExfiltrationClient, ExfiltrationConfig, EncodingType, TimingPattern, create_adaptive_config
+        from client import DoHExfiltrationClient, ExfiltrationConfig, EncodingType, TimingPattern
         from json_config_loader import JSONConfigLoader
         
         # Determine which file to use
@@ -79,12 +79,7 @@ def test_integration_with_config(file_path=None, config_file=None, scenario_name
                 else:
                     logger.error(f"❌ Failed to load configuration: {config_file}")
                     return False
-        
-        if not config:
-            # Fallback to adaptive configuration
-            logger.info(f"🎯 Selecting adaptive configuration for {file_size:,} bytes file...")
-            config = create_adaptive_config(file_size)
-        
+                
         # Override with environment variables
         config.doh_server = doh_server
         config.target_domain = target_domain
