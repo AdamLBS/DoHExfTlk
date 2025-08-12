@@ -26,8 +26,6 @@ brew install docker-compose                 # macOS
 
 ### Network Requirements
 - Internet access for Docker image downloads
-- Ports 80, 443, 8080 available on host
-- Administrative privileges for packet capture
 
 ## 🔧 Installation
 
@@ -93,10 +91,7 @@ docker exec -it client_test bash /scripts/test_doh.sh
 
 Expected output:
 ```
-✅ DoH server responding
-✅ DNS resolution working
-✅ JSON format supported
-✅ TLS certificate accepted
+Valid DNS response
 ```
 
 ### Test 2: DNS Resolution
@@ -104,18 +99,6 @@ Expected output:
 # Test direct DNS queries
 docker exec -it client_test bash /scripts/test_dns_direct.sh
 ```
-
-### Test 3: End-to-End Exfiltration
-```bash
-# Run complete exfiltration test
-docker exec -it client_test bash /scripts/test_exfiltration.sh
-```
-
-Expected workflow:
-1. Client creates test data
-2. Data is exfiltrated via DoH
-3. Interceptor detects patterns
-4. Data is reconstructed automatically
 
 ## 📊 Using the Detection System
 
@@ -144,11 +127,7 @@ cat exfiltration/server/captured/exfiltrated_*.txt
 
 ### Real-time Monitoring
 ```bash
-# Watch for new detections
-watch -n 2 'ls -lt exfiltration/server/captured/ | head -10'
-
-# Monitor active connections
-docker exec traffic_analyzer ss -tulpn
+docker compose logs doh_server -f
 ```
 
 ## 🎯 Running Exfiltration Tests
@@ -180,6 +159,12 @@ python config_generator.py --list
 ### Running Exfiltration Tests
 
 #### Using Configuration Files
+
+Theses commands must be run from the `exfiltration/client/` directory and on the exfil_client container.
+In order to pop a shell in the container, run:
+```bash
+docker exec -it exfil_client bash
+```
 ```bash
 # Run with specific configuration
 python run_client.py --config test_configs/apt_simulation.json

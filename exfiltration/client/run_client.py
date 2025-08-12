@@ -177,9 +177,9 @@ def main():
                 print(f"  • {config}")
                 
             print("\n📝 Usage examples:")
-            print(f"  python quick_test_json.py --scenario stealth myfile.txt")
-            print(f"  python quick_test_json.py --config custom_config.json myfile.txt")
-            print(f"  python quick_test_json.py myfile.txt  # Uses adaptive config")
+            print(f"  python run_client.py --scenario stealth myfile.txt")
+            print(f"  python run_client.py --config custom_config.json myfile.txt")
+            print(f"  python run_client.py myfile.txt  # Uses adaptive config")
             
         except Exception as e:
             logger.error(f"Error listing scenarios: {e}")

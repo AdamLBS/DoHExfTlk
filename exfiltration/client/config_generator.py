@@ -273,7 +273,7 @@ def test_config(config_file: str, test_file: str = None):
         
         # Utiliser le script de test avec la configuration
         import subprocess
-        cmd = [sys.executable, "quick_test_json.py", "--config", config_file, test_file]
+        cmd = [sys.executable, "run_client.py", "--config", config_file, test_file]
         result = subprocess.run(cmd, capture_output=True, text=True)
         
         if result.returncode == 0:
