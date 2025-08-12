@@ -2,42 +2,40 @@
 
 set -e
 
-echo "[🔍] Démarrage du serveur d'exfiltration DoH..."
+echo "Starting DoH exfiltration server..."
 
-# Méthode 1: Essayer de détecter l'interface veth du conteneur resolver
-echo "[ℹ️] Tentative de détection de l'interface réseau du conteneur resolver..."
+# Method 1: Try to detect the resolver container's veth interface
+echo "Attempting to detect resolver container network interface..."
 
 if command -v docker &> /dev/null; then
-    # Récupérer l'iflink du conteneur resolver
+    # Get resolver container iflink
     IFLINK=$(docker exec resolver cat /sys/class/net/eth0/iflink 2>/dev/null || echo "")
     
     if [ -n "$IFLINK" ]; then
-        echo "[ℹ️] iflink du resolver: $IFLINK"
-        # Trouver l'interface correspondante sur l'hôte
+        # Find corresponding interface on host
         MATCH_LINE=$(ip link | grep -B1 "^ *$IFLINK:" 2>/dev/null || echo "")
         if [ -n "$MATCH_LINE" ]; then
             VETH_LINE=$(echo "$MATCH_LINE" | tail -n 1)
             IFACE=$(echo "$VETH_LINE" | awk '{print $2}' | awk -F'@' '{print $1}' | sed 's/:$//')
-            echo "[✅] Interface veth détectée : $IFACE"
+            echo "veth interface detected: $IFACE"
         else
-            echo "[⚠️] Interface veth non trouvée, utilisation de eth0"
-            IFACE="eth0"
+            echo "Error: veth interface not found"
+            exit 1
         fi
     else
-        echo "[⚠️] Impossible de récupérer l'iflink, utilisation de eth0"
-        IFACE="eth0"
+        echo "Error: Cannot retrieve iflink from resolver container"
+        exit 1
     fi
 else
-    echo "[⚠️] Docker CLI non disponible, utilisation de eth0"
-    IFACE="eth0"
+    echo "Error: Docker CLI not available"
+    exit 1
 fi
 
-echo "[🚀] Lancement du serveur d'exfiltration sur interface $IFACE..."
-echo "[ℹ️] Répertoire de sortie: ${OUTPUT_DIR:-/app/captured}"
+echo "Starting exfiltration server on interface $IFACE..."
 
-# Créer le répertoire de sortie
+# Create output directory
 mkdir -p "${OUTPUT_DIR:-/app/captured}"
 
-# Lancer le serveur d'exfiltration avec détection d'interface dynamique
+# Launch exfiltration server with dynamic interface detection
 export INTERFACE="$IFACE"
 python3 -u /app/server.py
