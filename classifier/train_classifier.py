@@ -20,31 +20,31 @@ def apply_dohxp_detection(row):
 
 # Argument parser
 parser = argparse.ArgumentParser()
-parser.add_argument("--csvs", nargs="+", required=True, help="Liste des chemins vers les fichiers CSV")
+parser.add_argument("--csvs", nargs="+", required=True, help="List of paths to CSV files")
 args = parser.parse_args()
 
-# Lire et concaténer les CSV
+# Read and concatenate CSVs
 dfs = []
 for csv_path in args.csvs:
-    print(f"Lecture de : {csv_path}")
+    print(f"Reading: {csv_path}")
     df = pd.read_csv(csv_path)
     dfs.append(df)
 
 if not dfs:
-    raise ValueError("Aucun fichier CSV valide trouvé.")
+    raise ValueError("No valid CSV files found.")
 
 df_all = pd.concat(dfs, ignore_index=True)
 
-# Filtrage sur Benign / Malicious
+# Filter on Benign / Malicious
 df_filtered = df_all[df_all["Label"].isin(["Benign", "Malicious"])].copy()
 df_filtered["Label"] = df_filtered["Label"].map({"Benign": 0, "Malicious": 1})
 
-# Création des features DoHxP
+# Create DoHxP features
 df_filtered["avg_packet_size"] = df_filtered["FlowBytesSent"] / df_filtered["Duration"]
 df_filtered["frequency"] = df_filtered["FlowBytesSent"] / df_filtered["PacketTimeMedian"]
 df_filtered["volume_rate"] = df_filtered["FlowSentRate"]
 
-# Nettoyage
+# Cleanup
 df_filtered = df_filtered.replace([float("inf"), -float("inf")], pd.NA).dropna()
 
 # Features & Labels
@@ -54,18 +54,18 @@ y = df_filtered["Label"]
 # Split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
-# Modèle
+# Model
 clf = RandomForestClassifier(n_estimators=100, random_state=42)
 clf.fit(X_train, y_train)
 
-# Évaluation
+# Evaluation
 y_pred = clf.predict(X_test)
-print("✅ Résultats sur le jeu de test :\n")
+print("Test results:\n")
 print(classification_report(y_test, y_pred, target_names=["Benign", "Malicious"]))
 cm = confusion_matrix(y_test, y_pred)
 disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["Benign", "Malicious"])
 disp.plot(cmap=plt.cm.Blues)
-plt.title("Matrice de confusion")
+plt.title("Confusion Matrix")
 plt.savefig("confusion_matrix.png")
 fig = plt.figure(figsize=(10, 8))
 ax = fig.add_subplot(111, projection='3d')
@@ -82,59 +82,59 @@ ax.scatter(
 ax.set_xlabel("avg_packet_size")
 ax.set_ylabel("frequency")
 ax.set_zlabel("volume_rate")
-ax.set_title("Représentation 3D des flows")
+ax.set_title("3D Flow Representation")
 plt.savefig("3d_representation.png")
 
-# Création d'un DataFrame test pour simplifier la visualisation
+# Create test DataFrame for easier visualization
 df_test = X_test.copy()
 df_test["true_label"] = y_test.values
 df_test["predicted_label"] = y_pred
 
-# Faux positifs
+# False positives
 fp = df_test[(df_test["true_label"] == 0) & (df_test["predicted_label"] == 1)]
 
-# Faux négatifs
+# False negatives
 fn = df_test[(df_test["true_label"] == 1) & (df_test["predicted_label"] == 0)]
 
-# Affichage
+# Display
 plt.figure(figsize=(10, 6))
 
-# FP en rouge
-plt.scatter(fp["avg_packet_size"], fp["frequency"], color='red', label="Faux positifs (Benign → Malicious)", alpha=0.7)
+# FP in red
+plt.scatter(fp["avg_packet_size"], fp["frequency"], color='red', label="False positives (Benign → Malicious)", alpha=0.7)
 
-# FN en blue
-plt.scatter(fn["avg_packet_size"], fn["frequency"], color='blue', label="Faux négatifs (Malicious → Benign)", alpha=0.7)
+# FN in blue
+plt.scatter(fn["avg_packet_size"], fn["frequency"], color='blue', label="False negatives (Malicious → Benign)", alpha=0.7)
 
 plt.xlabel("avg_packet_size")
 plt.ylabel("frequency")
-plt.title("Faux positifs et faux négatifs")
+plt.title("False positives and false negatives")
 plt.legend()
 plt.grid(True)
 plt.savefig("false_positives_negatives.png")
 
-# Ajout des prédictions dans le DataFrame original
+# Add predictions to original DataFrame
 df_filtered["predicted_label"] = clf.predict(X)
 
-# Faux négatifs : vrai label = 1 (malicious), prédiction = 0 (benign)
+# False negatives: true label = 1 (malicious), prediction = 0 (benign)
 false_negatives = df_filtered[
     (df_filtered["Label"] == 1) & (df_filtered["predicted_label"] == 0)
 ]
 
-print(f"❌ Faux négatifs détectés : {len(false_negatives)}")
+print(f"False negatives detected: {len(false_negatives)}")
 
-# Afficher quelques exemples
+# Display some examples
 print(false_negatives[[
     "SourceIP", "DestinationIP", "SourcePort", "DestinationPort",
     "avg_packet_size", "frequency", "volume_rate", "Label", "predicted_label"
 ]].head())
 
 
-# Importance des features
+# Feature importance
 importances = clf.feature_importances_
 features = ["avg_packet_size", "frequency", "volume_rate"]
-print("\n🎯 Importance des features :")
+print("\nFeature importance:")
 for f, imp in zip(features, importances):
-    print(f"  {f} : {imp:.4f}")
+    print(f"  {f}: {imp:.4f}")
 train_df = X_train.copy()
 train_df["Label"] = y_train.values
 test_df = X_test.copy()
@@ -145,10 +145,10 @@ test_df.to_csv("test.csv", index=False)
 X_test_dohxp = X_test.copy()
 X_test_dohxp["true_label"] = y_test.values
 X_test_dohxp["dohxp_pred"] = X_test_dohxp.apply(apply_dohxp_detection, axis=1)
-print("📏 Performances de DoHxP sur le test set :\n")
+print("DoHxP performance on test set:\n")
 print(classification_report(X_test_dohxp["true_label"], X_test_dohxp["dohxp_pred"], target_names=["Benign", "Malicious"]))
 fp_dohxp = X_test_dohxp[(X_test_dohxp["true_label"] == 0) & (X_test_dohxp["dohxp_pred"] == 1)]
 fn_dohxp = X_test_dohxp[(X_test_dohxp["true_label"] == 1) & (X_test_dohxp["dohxp_pred"] == 0)]
 
-print(f"❌ Faux positifs DoHxP : {len(fp_dohxp)}")
-print(f"❌ Faux négatifs DoHxP : {len(fn_dohxp)}")
+print(f"DoHxP false positives: {len(fp_dohxp)}")
+print(f"DoHxP false negatives: {len(fn_dohxp)}")

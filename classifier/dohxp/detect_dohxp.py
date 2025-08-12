@@ -7,7 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-# Seuils DoHxP
+# DoHxP thresholds
 PAYLOAD_THRESHOLD = 200
 FREQ_THRESHOLD = 100
 VOLUME_THRESHOLD = 7500
@@ -80,7 +80,7 @@ def plot_3d_scatter(df, output_path="detection_plot.png"):
     ax.legend()
     plt.tight_layout()
     plt.savefig(output_path)
-    print(f"[+] 3D plot saved to {output_path}")
+    print(f"3D plot saved to {output_path}")
 
 def main():
     parser = argparse.ArgumentParser(description="Detect suspicious DoH flows from DoHLyzer JSON output.")
@@ -97,10 +97,10 @@ def main():
 
     df = pd.DataFrame(results)
     df.to_csv(args.output, index=False)
-    print(f"[+] Analysis complete: {args.output}")
+    print(f"Analysis complete: {args.output}")
     print(df)
 
-    # Générer le graphe si les données sont valides
+    # Generate plot if data is valid
     if not df.empty and "error" not in df.columns:
         plot_3d_scatter(df)
 
