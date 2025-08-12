@@ -1,4 +1,4 @@
-# Kent-Dissertation: DoH Exfiltration Detection Platform
+# DoHExfTlk: DNS-Over-HTTPS Exfiltration Toolkit
 
 > **IMPORTANT DISCLAIMER - EDUCATIONAL AND RESEARCH USE ONLY**
 > 
@@ -64,7 +64,7 @@ This research platform enables the study and detection of data exfiltration tech
 ```bash
 # 1. Clone the project
 git clone <repository-url>
-cd Kent-Dissertation
+cd DoHExfTlk
 
 # 2. Generate TLS certificates
 chmod +x generate_certs.sh
@@ -301,12 +301,12 @@ python -m pytest tests/
 This project is developed in an academic context. For any academic use, please cite:
 
 ```bibtex
-@misc{kent-doh-detection-2025,
-  title={DoH Exfiltration Detection Platform},
-  author={[Your name]},
+@misc{dohexftlk-2025,
+  title={DNS-Over-HTTPS Exfiltration and Evasion Toolkit},
+  author={[Adam Elaoumari]},
   year={2025},
-  institution={University of Kent},
-  note={Dissertation project}
+  institution={University of Kent - Canterbury},
+  note={MSc Cyber Security Dissertation Project},
 }
 ```
 
