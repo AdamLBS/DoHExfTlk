@@ -1,11 +1,4 @@
 #!/usr/bin/env python3
-"""
-DoH Exfiltration Server - Version Simplifiée
-
-Simple serveur pour capturer et reconstruire les données exfiltrées via DoH.
-Se concentre uniquement sur la capture et reconstruction, sans détection complexe.
-"""
-
 import os
 import sys
 import time
@@ -21,221 +14,221 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class SimpleExfiltrationServer:
-    """Serveur simple pour capturer l'exfiltration DoH"""
+    """Simple server to capture DoH exfiltration"""
     
     def __init__(self, output_dir="/app/captured", interface=None):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
         self.interface = interface or os.environ.get('INTERFACE', 'eth0')
         
-        # Sessions de reconstruction
+        # Reconstruction sessions
         self.sessions = {}
         self.session_lock = threading.Lock()
         
-        logger.info(f"Serveur d'exfiltration démarré")
+        logger.info(f"Exfiltration server started")
         logger.info(f"Interface: {self.interface}")
-        logger.info(f"Répertoire de sortie: {self.output_dir}")
+        logger.info(f"Output directory: {self.output_dir}")
     
     def handle_dns_query(self, query_data):
-        """Traite une requête DNS capturée"""
+        """Process a captured DNS query"""
         try:
             domain = query_data.get('domain', '')
             query_name = query_data.get('query_name', '')
             
-            # Détecter les requêtes d'exfiltration (domaines suspects)
+            # Detect exfiltration queries (suspicious domains)
             if any(keyword in domain.lower() for keyword in ['exfill', 'data', 'leak']):
-                logger.info(f"🎯 Requête d'exfiltration détectée: {query_name}")
+                logger.info(f"Exfiltration query detected: {query_name}")
                 
-                # Extraire les données potentielles
+                # Extract potential data
                 self._extract_exfiltration_data(query_data)
                 
         except Exception as e:
-            logger.error(f"Erreur lors du traitement de la requête: {e}")
+            logger.error(f"Error processing query: {e}")
     
     def _extract_exfiltration_data(self, query_data):
-        """Extrait et stocke les données d'exfiltration"""
+        """Extract and store exfiltration data"""
         try:
             query_name = query_data.get('query_name', '')
             timestamp = query_data.get('timestamp', time.time())
             
-            # Analyser le format: session_id-index-total-chunk.random.domain
-            logger.debug(f"🔍 Analyzing query name: {query_name}")
+            # Analyze format: session_id-index-total-chunk.random.domain
+            logger.debug(f"Analyzing query name: {query_name}")
             parts = query_name.split('.')
             if len(parts) >= 2:
-                data_segment = parts[0]  # Premier segment avant le premier point
+                data_segment = parts[0]  # First segment before the first dot
                 
-                # Parser le format: session_id-index-total-chunk
+                # Parse format: session_id-index-total-chunk
                 import re
-                # Pattern correct pour le format réel: timestamp-index-total-chunk
-                # Le chunk peut contenir des caractères base64 (lettres, chiffres, +, /, =, -, _)
+                # Correct pattern for real format: timestamp-index-total-chunk
+                # The chunk can contain base64 characters (letters, numbers, +, /, =, -, _)
                 pattern = re.compile(r"(\d+)-(\d+)-(\d+)-(.+)")
                 
-                # Debug : afficher les tentatives de matching
-                logger.debug(f"🔍 Tentative de parsing: '{data_segment}'")
+                # Debug: show matching attempts
+                logger.debug(f"Parsing attempt: '{data_segment}'")
                 match = pattern.match(data_segment)
                 
                 if match:
-                    session_id = match.group(1)  # timestamp uniquement
+                    session_id = match.group(1)  # timestamp only
                     index = int(match.group(2))
                     total = int(match.group(3))
-                    chunk = match.group(4)  # Données base64
+                    chunk = match.group(4)  # base64 data
                     
-                    logger.debug(f"✅ Match réussi: session={session_id}, index={index}, total={total}, chunk={chunk[:10]}...")
+                    logger.debug(f"Match successful: session={session_id}, index={index}, total={total}, chunk={chunk[:10]}...")
                     
                     with self.session_lock:
                         if session_id not in self.sessions:
                             self.sessions[session_id] = {
                                 'start_time': timestamp,
                                 'total_chunks': total,
-                                'chunks': {},  # Utiliser un dict pour l'indexation
+                                'chunks': {},  # Use dict for indexing
                                 'queries': []
                             }
                         
-                        # Stocker le chunk avec son index
+                        # Store chunk with its index
                         self.sessions[session_id]['chunks'][index] = chunk
                         self.sessions[session_id]['queries'].append(query_data)
                     
-                    logger.info(f"📦 Segment de données capturé: {session_id}-{index:04d}-{total:04d}-{chunk[:20]}...")
+                    logger.info(f"Data segment captured: {session_id}-{index:04d}-{total:04d}-{chunk[:20]}...")
                     
-                    # Vérifier si on a tous les chunks
+                    # Check if we have all chunks
                     session = self.sessions[session_id]
                     if len(session['chunks']) >= session['total_chunks']:
-                        logger.info(f"🔧 Reconstruction complète pour session {session_id} ({session['total_chunks']} chunks)")
+                        logger.info(f"Complete reconstruction for session {session_id} ({session['total_chunks']} chunks)")
                         self._try_reconstruct_session(session_id)
                 else:
-                    # Debug détaillé pour comprendre pourquoi ça ne marche pas
-                    logger.warning(f"⚠️ Format de chunk non reconnu 2: {data_segment}")
-                    logger.debug(f"🔧 Pattern utilisé: {pattern.pattern}")
+                    # Detailed debug to understand why it doesn't work
+                    logger.warning(f"Unrecognized chunk format 2: {data_segment}")
+                    logger.debug(f"Pattern used: {pattern.pattern}")
                     
-                    # Tentative de debug avec un pattern plus simple
+                    # Debug attempt with simpler pattern
                     simple_pattern = re.compile(r"(\d+)-(\d+)-(\d+)-(.+)")
                     simple_match = simple_pattern.match(data_segment)
                     if simple_match:
-                        logger.debug(f"✅ Simple pattern match: {simple_match.groups()}")
+                        logger.debug(f"Simple pattern match: {simple_match.groups()}")
                     else:
-                        logger.debug(f"❌ Même le simple pattern ne fonctionne pas")
+                        logger.debug(f"Even simple pattern doesn't work")
                         
-                        # Afficher les caractères un par un pour diagnostiquer
+                        # Display characters one by one for diagnosis
                         chars_debug = [f"{c}({ord(c)})" for c in data_segment[:50]]
-                        logger.debug(f"🔤 Caractères: {' '.join(chars_debug)}")
+                        logger.debug(f"Characters: {' '.join(chars_debug)}")
                 
         except Exception as e:
-            logger.error(f"Erreur lors de l'extraction: {e}")
+            logger.error(f"Error during extraction: {e}")
             import traceback
             traceback.print_exc()
     
     def _try_reconstruct_session(self, session_id):
-        """Tente de reconstruire les données d'une session"""
+        """Attempt to reconstruct session data"""
         try:
             session = self.sessions[session_id]
             chunks = session['chunks']
             total_chunks = session['total_chunks']
             
-            # Vérifier que tous les chunks sont présents
+            # Check that all chunks are present
             if len(chunks) == total_chunks:
-                logger.info(f"🔧 Reconstruction complète pour session {session_id} ({total_chunks} chunks)")
+                logger.info(f"Complete reconstruction for session {session_id} ({total_chunks} chunks)")
                 
-                # Ordonner les chunks par index
+                # Order chunks by index
                 ordered_chunks = []
                 for i in range(total_chunks):
                     if i in chunks:
                         ordered_chunks.append(chunks[i])
                     else:
-                        logger.error(f"❌ Chunk manquant: {i}")
+                        logger.error(f"Missing chunk: {i}")
                         return
                 
-                # Reconstruire les données
+                # Reconstruct data
                 reconstructed_data = self._decode_chunks(ordered_chunks)
                 
                 if reconstructed_data:
-                    # Sauvegarder les données reconstruites
+                    # Save reconstructed data
                     output_file = self.output_dir / f"exfiltrated_{session_id}_{int(time.time())}.bin"
                     with open(output_file, 'wb') as f:
                         f.write(reconstructed_data)
                     
-                    # Analyser le type de fichier et afficher l'aperçu approprié
+                    # Analyze file type and display appropriate preview
                     file_info = self._analyze_file_content(reconstructed_data)
                     
-                    logger.info(f"✅ Données reconstruites sauvées: {output_file}")
-                    logger.info(f"📊 Taille: {len(reconstructed_data)} bytes")
-                    logger.info(f"� Type détecté: {file_info['type']}")
-                    # rename le fichier avec l'extension appropriée
-                    logger.info(f"🔍 Encodage: {file_info.get('encoding', 'unknown')}")
-                    logger.info(f"📂 Extension suggérée: {file_info.get('extension', '.bin')}")
+                    logger.info(f"Reconstructed data saved: {output_file}")
+                    logger.info(f"Size: {len(reconstructed_data)} bytes")
+                    logger.info(f"Detected type: {file_info['type']}")
+                    # rename file with appropriate extension
+                    logger.info(f"Encoding: {file_info.get('encoding', 'unknown')}")
+                    logger.info(f"Suggested extension: {file_info.get('extension', '.bin')}")
                     logger.info(f"File info: {file_info}")
                     if 'extension' in file_info:
                         new_file_name = output_file.with_suffix(file_info['extension'])
                         output_file.rename(new_file_name)
-                        logger.info(f"🔄 Fichier renommé: {new_file_name}")
+                        logger.info(f"File renamed: {new_file_name}")
                                         
-                    # Nettoyer la session
+                    # Clean up session
                     del self.sessions[session_id]
             else:
-                logger.info(f"⏳ Session {session_id}: {len(chunks)}/{total_chunks} chunks reçus")
+                logger.info(f"Session {session_id}: {len(chunks)}/{total_chunks} chunks received")
                     
         except Exception as e:
-            logger.error(f"Erreur lors de la reconstruction: {e}")
+            logger.error(f"Error during reconstruction: {e}")
             import traceback
             traceback.print_exc()
     
     def _decode_chunks(self, ordered_chunks):
-        """Décode les chunks ordonnés en données originales"""
+        """Decode ordered chunks into original data"""
         import base64
         
-        # Concaténer tous les chunks dans l'ordre
+        # Concatenate all chunks in order
         combined_data = ''.join(ordered_chunks)
-        logger.info(f"🔢 Données combinées: {len(combined_data)} caractères")
+        logger.info(f"Combined data: {len(combined_data)} characters")
         
-        # Essayer le décodage base64 URL-safe en premier (utilisé par le client)
+        # Try URL-safe base64 decoding first (used by client)
         try:
-            # Ajouter le padding nécessaire pour base64
+            # Add necessary padding for base64
             padding_needed = 4 - (len(combined_data) % 4)
             if padding_needed != 4:
                 combined_data += '=' * padding_needed
             
             decoded = base64.urlsafe_b64decode(combined_data)
-            logger.info(f"✅ Décodage réussi avec base64 URL-safe")
+            logger.info(f"Successful decoding with URL-safe base64")
             return decoded
         except Exception as e:
-            logger.warning(f"⚠️ Échec base64 URL-safe: {e}")
+            logger.warning(f"URL-safe base64 failed: {e}")
         
-        # Essayer base64 standard
+        # Try standard base64
         try:
             decoded = base64.b64decode(combined_data + '=' * (4 - len(combined_data) % 4))
-            logger.info(f"✅ Décodage réussi avec base64 standard")
+            logger.info(f"Successful decoding with standard base64")
             return decoded
         except Exception as e:
-            logger.warning(f"⚠️ Échec base64 standard: {e}")
+            logger.warning(f"Standard base64 failed: {e}")
         
-        # Essayer base32
+        # Try base32
         try:
             padding_needed = 8 - (len(combined_data) % 8)
             if padding_needed != 8:
                 combined_data += '=' * padding_needed
             decoded = base64.b32decode(combined_data)
-            logger.info(f"✅ Décodage réussi avec base32")
+            logger.info(f"Successful decoding with base32")
             return decoded
         except Exception as e:
-            logger.warning(f"⚠️ Échec base32: {e}")
+            logger.warning(f"Base32 failed: {e}")
         
-        # Essayer hex
+        # Try hex
         try:
             decoded = bytes.fromhex(combined_data)
-            logger.info(f"✅ Décodage réussi avec hex")
+            logger.info(f"Successful decoding with hex")
             return decoded
         except Exception as e:
-            logger.warning(f"⚠️ Échec hex: {e}")
+            logger.warning(f"Hex failed: {e}")
         
-        # Si aucun décodage ne fonctionne, traiter comme données brutes
-        logger.warning("⚠️ Aucun décodage réussi, sauvegarde des données brutes")
+        # If no decoding works, treat as raw data
+        logger.warning("No decoding succeeded, saving raw data")
         return combined_data.encode('utf-8', errors='ignore')
     
     def _analyze_file_content(self, data):
-        """Analyse le contenu du fichier pour déterminer son type"""
+        """Analyze file content to determine its type"""
         if not data:
             return {'type': 'empty', 'encoding': None}
         
-        # Vérifier les signatures de fichiers (magic numbers)
+        # Check file signatures (magic numbers)
         signatures = {
             b'\x89PNG\r\n\x1a\n': {'type': 'PNG Image', 'ext': '.png'},
             b'\xff\xd8\xff': {'type': 'JPEG Image', 'ext': '.jpg'},
@@ -262,7 +255,7 @@ class SimpleExfiltrationServer:
             b'\xd0\xcf\x11\xe0': {'type': 'Microsoft Office', 'ext': '.doc/.xls'},
         }
         
-        # Vérifier les signatures
+        # Check signatures
         for signature, info in signatures.items():
             if data.startswith(signature):
                 return {
@@ -271,41 +264,41 @@ class SimpleExfiltrationServer:
                     'encoding': 'binary'
                 }
         
-        # Par défaut, considérer comme binaire
+        # Default to binary
         return {'type': 'Binary Data', 'encoding': 'binary', 'extension': '.bin'}
     
     def start(self):
-        """Démarre le serveur de capture"""
-        logger.info("🚀 Démarrage de la capture...")
+        """Start capture server"""
+        logger.info("Starting capture...")
         
         try:
-            # Créer l'intercepteur de trafic
+            # Create traffic interceptor
             interceptor = DoHTrafficInterceptor(
                 interface=self.interface,
                 output_dir=str(self.output_dir)
             )
             
-            # Configurer le callback pour traiter les requêtes
+            # Configure callback to process queries
             interceptor.dns_callback = self.handle_dns_query
             
-            # Démarrer la capture
+            # Start capture
             interceptor.start_capture()
             
         except KeyboardInterrupt:
-            logger.info("🛑 Arrêt du serveur...")
+            logger.info("Stopping server...")
         except Exception as e:
-            logger.error(f"❌ Erreur fatale: {e}")
+            logger.error(f"Fatal error: {e}")
             sys.exit(1)
 
 def main():
-    """Point d'entrée principal"""
+    """Main entry point"""
     
-    # Configuration depuis les variables d'environnement
+    # Configuration from environment variables
     output_dir = os.environ.get('OUTPUT_DIR', '/app/captured')
     os.chown(output_dir, 1000, 1000)
     interface = os.environ.get('INTERFACE')
     
-    # Créer et démarrer le serveur
+    # Create and start server
     server = SimpleExfiltrationServer(
         output_dir=output_dir,
         interface=interface
