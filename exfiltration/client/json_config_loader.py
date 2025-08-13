@@ -25,7 +25,6 @@ class JSONConfigLoader:
         os.chown(self.config_dir, 1000, 1000)
         
         # Create sample configurations if they don't exist
-        self._create_sample_configs()
     
     def load_config_from_file(self, config_path: str) -> Optional[ExfiltrationConfig]:
         """
@@ -215,141 +214,7 @@ class JSONConfigLoader:
             'retry_delay': config.retry_delay,
             'timeout': config.timeout
         }
-    
-    def _create_sample_configs(self):
-        """Create sample configurations for evasion testing"""
         
-        # Classic configuration (easily detectable)
-        classic_config = {
-            "name": "Classic Exfiltration",
-            "description": "Classic easily detectable configuration for basic tests",
-            "exfiltration_config": {
-                "doh_server": "https://doh.local/dns-query",
-                "target_domain": "exfill.local",
-                "chunk_size": 40,
-                "encoding": "base64",
-                "timing_pattern": "regular",
-                "base_delay": 0.5,
-                "compression": False,
-                "encryption": False,
-                "subdomain_randomization": False
-            },
-            "test_files": ["sample.txt", "credentials.json"],
-            "notes": "Basic configuration for detection system validation"
-        }
-        
-        # Advanced stealth configuration
-        stealth_config = {
-            "name": "Advanced Stealth",
-            "description": "Advanced stealth configuration for ML evasion",
-            "exfiltration_config": {
-                "doh_server": "https://doh.local/dns-query",
-                "target_domain": "cdn-assets.local",
-                "chunk_size": 12,
-                "encoding": "custom",
-                "timing_pattern": "stealth",
-                "base_delay": 8.0,
-                "delay_variance": 3.0,
-                "compression": True,
-                "encryption": True,
-                "encryption_key": "stealth_key_2024",
-                "subdomain_randomization": True,
-                "padding": True,
-                "padding_size": 15,
-                "domain_rotation": True,
-                "backup_domains": ["api-service.local", "media-content.local"]
-            },
-            "test_files": ["database_dump.sql", "api_keys.json"],
-            "notes": "Advanced evasion techniques: small chunks, variable timing, encryption"
-        }
-        
-        # Fast burst configuration
-        burst_config = {
-            "name": "Burst Attack",
-            "description": "Fast burst attack for temporal detection testing",
-            "exfiltration_config": {
-                "doh_server": "https://doh.local/dns-query",
-                "target_domain": "cache-service.local",
-                "chunk_size": 50,
-                "encoding": "hex",
-                "timing_pattern": "burst",
-                "base_delay": 0.02,
-                "burst_size": 12,
-                "burst_delay": 3.0,
-                "compression": True,
-                "subdomain_randomization": True,
-                "max_retries": 5
-            },
-            "test_files": ["large_dataset.csv", "backup.zip"],
-            "notes": "Burst pattern to test temporal anomaly detection"
-        }
-        
-        # APT configuration (long persistence)
-        apt_config = {
-            "name": "APT Simulation",
-            "description": "APT simulation with very slow and discreet exfiltration",
-            "exfiltration_config": {
-                "doh_server": "https://doh.local/dns-query",
-                "target_domain": "update-service.local",
-                "chunk_size": 8,
-                "encoding": "base32",
-                "timing_pattern": "random",
-                "base_delay": 30.0,
-                "delay_variance": 15.0,
-                "compression": True,
-                "encryption": True,
-                "encryption_key": "apt_long_term_key",
-                "subdomain_randomization": True,
-                "domain_rotation": True,
-                "backup_domains": [
-                    "security-updates.local",
-                    "maintenance-api.local",
-                    "status-check.local"
-                ],
-                "padding": True,
-                "padding_size": 20
-            },
-            "test_files": ["financial_records.xlsx", "employee_data.csv"],
-            "notes": "APT simulation: very slow delays, domain rotation, encryption"
-        }
-        
-        # Speed test configuration
-        speed_test_config = {
-            "name": "Speed Test",
-            "description": "Configuration optimized for maximum speed",
-            "exfiltration_config": {
-                "doh_server": "https://doh.local/dns-query",
-                "target_domain": "fast-cdn.local",
-                "chunk_size": 60,
-                "encoding": "base64",
-                "timing_pattern": "burst",
-                "base_delay": 0.001,
-                "burst_size": 20,
-                "burst_delay": 0.1,
-                "compression": True,
-                "max_retries": 1,
-                "retry_delay": 0.05,
-                "timeout": 2.0
-            },
-            "test_files": ["speed_test_file.bin"],
-            "notes": "Configuration to measure maximum exfiltration speed"
-        }
-        
-        # Save sample configurations
-        configs = {
-            'classic': classic_config,
-            'stealth': stealth_config,
-            'burst': burst_config,
-            'apt': apt_config,
-            'speed': speed_test_config
-        }
-        
-        for name, config in configs.items():
-            config_file = self.config_dir / f"{name}.json"
-            if not config_file.exists():
-                with open(config_file, 'w', encoding='utf-8') as f:
-                    json.dump(config, f, indent=2, ensure_ascii=False)
-    
     def create_custom_test_config(self, name: str, file_size: int, 
                                 target_speed: str = "balanced") -> str:
         """
