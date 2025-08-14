@@ -1,46 +1,72 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 import os
 import json
 import logging
 import argparse
-import pandas as pd
-import numpy as np
 from pathlib import Path
 from datetime import datetime
-from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score, StratifiedKFold
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.svm import SVC
-from sklearn.naive_bayes import GaussianNB
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score, accuracy_score
-from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.utils import resample
-from imblearn.over_sampling import SMOTE
-from imblearn.under_sampling import RandomUnderSampler
-from imblearn.combine import SMOTEENN
-import joblib
 import warnings
 warnings.filterwarnings('ignore')
 
+import numpy as np
+import pandas as pd
+
+from sklearn.model_selection import train_test_split, GridSearchCV, StratifiedKFold
+from sklearn.metrics import (classification_report, confusion_matrix,
+                             roc_auc_score, accuracy_score, roc_curve)
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.utils.validation import check_is_fitted
+
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+
+from imblearn.over_sampling import SMOTE
+from imblearn.under_sampling import RandomUnderSampler
+from imblearn.combine import SMOTEENN
+
+import joblib
+import sklearn
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("trainer")
+
+
+def pick_threshold_at_fpr(y_true, y_proba, target_fpr=0.01):
+    """Choisit un seuil tel que FPR ≈ target_fpr (sur l'ensemble de validation)."""
+    fpr, tpr, thr = roc_curve(y_true, y_proba)
+    if len(thr) == 0:
+        return 0.5
+    idx = np.argmin(np.abs(fpr - target_fpr))
+    return float(thr[idx])
+
 
 class NetworkFlowMLTrainer:
-    """ML trainer for network flow datasets"""
-    
-    def __init__(self, quick_mode=False):
+    """ML trainer for network flow datasets — Pipeline + Calibration + Threshold"""
+
+    def __init__(self, quick_mode=False, fpr_target=0.01, group_col=None):
         self.quick_mode = quick_mode
         self.max_samples = 10000 if quick_mode else None
+        self.fpr_target = fpr_target
+        self.group_col = group_col  # réservé si tu veux du GroupKFold plus tard
+
         self.setup_directories()
-        self.scaler = StandardScaler()
+
+        # Encodage des labels
         self.label_encoder = LabelEncoder()
+
+        # Balancement
         self.smote = SMOTE(random_state=42)
         self.use_class_balancing = True
-        self.cross_val_folds = 3 if quick_mode else 5  # Reduce folds in quick mode
-        
-        # Numeric features from network dataset
+        self.cross_val_folds = 3 if quick_mode else 5
+
+        # Tes features numériques
         self.numeric_features = [
-            'SourcePort', 'DestinationPort', 'Duration', 
+            'SourcePort', 'DestinationPort', 'Duration',
             'FlowBytesSent', 'FlowSentRate', 'FlowBytesReceived', 'FlowReceivedRate',
             'PacketLengthVariance', 'PacketLengthStandardDeviation', 'PacketLengthMean',
             'PacketLengthMedian', 'PacketLengthMode', 'PacketLengthSkewFromMedian',
@@ -53,15 +79,14 @@ class NetworkFlowMLTrainer:
             'ResponseTimeTimeSkewFromMedian', 'ResponseTimeTimeSkewFromMode',
             'ResponseTimeTimeCoefficientofVariation'
         ]
-        
-        # Model configuration with anti-overfitting regularization
+
+        # Espace de recherche (calibrage systématique)
         if quick_mode:
-            # Simplified configuration for quick mode
             self.models_config = {
                 'random_forest': {
                     'model': RandomForestClassifier,
                     'params': {
-                        'n_estimators': [50, 100],
+                        'n_estimators': [100],
                         'max_depth': [10, 15],
                         'min_samples_split': [10],
                         'min_samples_leaf': [5],
@@ -77,21 +102,21 @@ class NetworkFlowMLTrainer:
                         'penalty': ['l2'],
                         'class_weight': ['balanced'] if self.use_class_balancing else [None],
                         'random_state': [42],
-                        'max_iter': [1000]
+                        'max_iter': [1000],
+                        'solver': ['liblinear']
                     }
                 }
             }
         else:
-            # Complete configuration for normal mode
             self.models_config = {
                 'random_forest': {
                     'model': RandomForestClassifier,
                     'params': {
                         'n_estimators': [100, 200],
-                        'max_depth': [10, 15, 20],  # Limit depth
-                        'min_samples_split': [5, 10, 20],  # Increase min_samples_split
-                        'min_samples_leaf': [2, 5, 10],   # Add min_samples_leaf
-                        'max_features': ['sqrt', 'log2', 0.8],  # Limit features
+                        'max_depth': [10, 15, 20],
+                        'min_samples_split': [5, 10, 20],
+                        'min_samples_leaf': [2, 5, 10],
+                        'max_features': ['sqrt', 'log2', 0.8],
                         'class_weight': ['balanced'] if self.use_class_balancing else [None],
                         'random_state': [42]
                     }
@@ -100,7 +125,7 @@ class NetworkFlowMLTrainer:
                     'model': GradientBoostingClassifier,
                     'params': {
                         'n_estimators': [100, 150],
-                        'learning_rate': [0.05, 0.1, 0.15],
+                        'learning_rate': [0.05, 0.1],
                         'max_depth': [3, 5],
                         'min_samples_split': [10, 20],
                         'min_samples_leaf': [5, 10],
@@ -112,329 +137,219 @@ class NetworkFlowMLTrainer:
                     'model': LogisticRegression,
                     'params': {
                         'C': [0.01, 0.1, 1],
-                        'penalty': ['l1', 'l2', 'elasticnet'],
-                        'l1_ratio': [0.5],
+                        'penalty': ['l1', 'l2'],
                         'solver': ['liblinear', 'saga'],
                         'class_weight': ['balanced'] if self.use_class_balancing else [None],
                         'random_state': [42],
-                        'max_iter': [1000, 2000]
+                        'max_iter': [2000]
                     }
                 },
                 'svm': {
-                    'model': SVC,
+                    'model': SVC,  # on forcera probability=True dans make_pipeline()
                     'params': {
                         'C': [0.1, 1, 5],
                         'kernel': ['rbf', 'linear'],
-                        'gamma': ['scale', 'auto', 0.1, 0.01],
+                        'gamma': ['scale', 'auto', 0.1],
                         'class_weight': ['balanced'] if self.use_class_balancing else [None],
-                        'probability': [True],
-                        'random_state': [42]
+                        # probability est forcé dans make_pipeline, inutile ici
                     }
                 }
             }
-    
+
+    # ---------- infra ----------
     def setup_directories(self):
-        """Create necessary directories"""
-        self.models_dir = Path("../models") #TODO : Adapt to current directory
+        self.models_dir = Path("../models")
         self.reports_dir = Path("../ml_reports")
-        
-        self.models_dir.mkdir(exist_ok=True)
-        self.reports_dir.mkdir(exist_ok=True)
-        
+        self.models_dir.mkdir(exist_ok=True, parents=True)
+        self.reports_dir.mkdir(exist_ok=True, parents=True)
         logger.info(f"Directories created: {self.models_dir}, {self.reports_dir}")
-    
+
+    # ---------- data ----------
     def load_datasets(self):
-        """Load all available datasets"""
         logger.info("Loading datasets...")
-        
         datasets_dir = Path("../datasets")
         all_data = []
-        
-        # Search for all CSV files in datasets folder
         if datasets_dir.exists():
             csv_files = list(datasets_dir.glob("*.csv"))
             logger.info(f"CSV files found: {[f.name for f in csv_files]}")
-            
             for csv_file in csv_files:
                 try:
-                    logger.info(f"Loading: {csv_file.name}")
                     df = pd.read_csv(csv_file)
-
-                    # Check that file has Label column
                     if 'Label' in df.columns:
                         logger.info(f"✅ {csv_file.name}: {len(df)} rows, Labels: {df['Label'].value_counts().to_dict()}")
                         all_data.append(df)
                     else:
                         logger.warning(f"⚠️ {csv_file.name}: No 'Label' column, ignored")
-                        
                 except Exception as e:
                     logger.error(f"❌ Error loading {csv_file.name}: {e}")
 
-        if all_data:
-            combined_df = pd.concat(all_data, ignore_index=True)
-            logger.info(f"Combined dataset: {len(combined_df)} rows")
-            logger.info(f"Label distribution: {combined_df['Label'].value_counts().to_dict()}")
-            
-            # Apply limitation in quick mode
-            if self.quick_mode and self.max_samples and len(combined_df) > self.max_samples:
-                logger.info(f"Quick mode activated: limiting to {self.max_samples} samples")
-                # Stratified sampling to preserve class distribution
-                combined_df = combined_df.groupby('Label').apply(
-                    lambda x: x.sample(min(len(x), self.max_samples // combined_df['Label'].nunique()), 
-                                     random_state=42)
-                ).reset_index(drop=True)
-                logger.info(f"Limited dataset: {len(combined_df)} rows")
-                logger.info(f"New distribution: {combined_df['Label'].value_counts().to_dict()}")
-            
-            return combined_df
-        else:
+        if not all_data:
             logger.error("No valid dataset found")
             return None
-    
-    def preprocess_data(self, df):
-        """Preprocess the data"""
-        logger.info("Preprocessing data...")
-        
-        df_processed = df.copy()
-        
-        # Select only available numeric features
-        available_numeric_features = [col for col in self.numeric_features if col in df_processed.columns]
-        logger.info(f"Available numeric features: {len(available_numeric_features)}/{len(self.numeric_features)}")
-        
-        # Check missing values
-        missing_info = df_processed[available_numeric_features].isnull().sum()
-        if missing_info.sum() > 0:
-            logger.warning(f"Missing values detected:")
-            for col, missing in missing_info[missing_info > 0].items():
-                logger.warning(f"  - {col}: {missing} missing values")
-        
-        # Replace missing values with median
-        for col in available_numeric_features:
-            if df_processed[col].isnull().sum() > 0:
-                median_val = df_processed[col].median()
-                df_processed[col].fillna(median_val, inplace=True)
-        
-        # Replace infinite values
-        df_processed = df_processed.replace([np.inf, -np.inf], np.nan)
-        for col in available_numeric_features:
-            if df_processed[col].isnull().sum() > 0:
-                median_val = df_processed[col].median()
-                df_processed[col].fillna(median_val, inplace=True)
-        
-        # Prepare features and target
-        X = df_processed[available_numeric_features]
-        y = df_processed['Label']
-        
-        # Encode labels (Benign = 0, Malicious = 1)
-        y_encoded = self.label_encoder.fit_transform(y)
-        
-        # Normalize features
-        X_scaled = self.scaler.fit_transform(X)
-        X_scaled = pd.DataFrame(X_scaled, columns=available_numeric_features)
-        
-        logger.info(f"Preprocessing completed: {X_scaled.shape[0]} samples, {X_scaled.shape[1]} features")
+
+        combined_df = pd.concat(all_data, ignore_index=True)
+        logger.info(f"Combined dataset: {len(combined_df)} rows")
+        logger.info(f"Label distribution: {combined_df['Label'].value_counts().to_dict()}")
+
+        if self.quick_mode and self.max_samples and len(combined_df) > self.max_samples:
+            logger.info(f"Quick mode: limiting to {self.max_samples} samples (stratified)")
+            combined_df = combined_df.groupby('Label', group_keys=False).apply(
+                lambda x: x.sample(
+                    min(len(x), self.max_samples // combined_df['Label'].nunique()),
+                    random_state=42
+                )
+            ).reset_index(drop=True)
+            logger.info(f"Limited dataset: {len(combined_df)} rows")
+
+        return combined_df
+
+    def preprocess_data(self, df: pd.DataFrame):
+        """NE PAS SCALER ICI — on nettoie et on garde les features en DataFrame."""
+        dfp = df.copy()
+        available = [c for c in self.numeric_features if c in dfp.columns]
+
+        # Nettoyage valeurs manquantes/infinies via médiane
+        for col in available:
+            s = pd.to_numeric(dfp[col], errors='coerce')
+            s = s.replace([np.inf, -np.inf], np.nan)
+            if s.isnull().any():
+                s = s.fillna(s.median())
+            dfp[col] = s
+
+        if 'Label' not in dfp.columns:
+            raise ValueError("Column 'Label' not found in dataset")
+
+        X = dfp[available].copy()
+        y = self.label_encoder.fit_transform(dfp['Label'])
+
+        logger.info(f"Preprocessing completed: {X.shape[0]} samples, {X.shape[1]} features")
         logger.info(f"Encoded classes: {dict(zip(self.label_encoder.classes_, range(len(self.label_encoder.classes_))))}")
-        
-        return X_scaled, y_encoded, available_numeric_features
-    
+        return X, y, available
+
     def balance_dataset(self, X, y, method='smote'):
-        """Balance dataset to reduce class bias"""
         logger.info(f"Balancing dataset with {method}...")
-        
-        # Original distribution
         unique, counts = np.unique(y, return_counts=True)
-        logger.info(f"Distribution before: {dict(zip(self.label_encoder.classes_[unique], counts))}")
-        
+        logger.info(f"Distribution before: {dict(zip(unique, counts))}")
         try:
             if method == 'smote':
-                # SMOTE to generate synthetic samples of minority class
-                X_balanced, y_balanced = self.smote.fit_resample(X, y)
-                
+                Xb, yb = self.smote.fit_resample(X, y)
             elif method == 'undersample':
-                # Undersample majority class
-                undersampler = RandomUnderSampler(random_state=42, sampling_strategy=0.5)  # 2:1 ratio
-                X_balanced, y_balanced = undersampler.fit_resample(X, y)
-                
+                rus = RandomUnderSampler(random_state=42, sampling_strategy=0.5)
+                Xb, yb = rus.fit_resample(X, y)
             elif method == 'combined':
-                # SMOTE + undersampling combination
                 smote_enn = SMOTEENN(random_state=42)
-                X_balanced, y_balanced = smote_enn.fit_resample(X, y)
-                
+                Xb, yb = smote_enn.fit_resample(X, y)
             else:
                 logger.warning(f"Unknown method {method}, no balancing")
                 return X, y
-            
-            # Distribution after balancing
-            unique_after, counts_after = np.unique(y_balanced, return_counts=True)
-            logger.info(f"Distribution after: {dict(zip(self.label_encoder.classes_[unique_after], counts_after))}")
-            logger.info(f"Balancing completed: {len(X)} → {len(X_balanced)} samples")
-            
-            return X_balanced, y_balanced
-            
+
+            unique_after, counts_after = np.unique(yb, return_counts=True)
+            logger.info(f"Distribution after : {dict(zip(unique_after, counts_after))}")
+            logger.info(f"Balancing completed: {len(X)} → {len(Xb)} samples")
+            return Xb, yb
         except Exception as e:
             logger.error(f"Balancing error: {e}")
             return X, y
-    
-    def train_model(self, model_name, model_config, X_train, y_train, X_val, y_val):
-        """Train a model with hyperparameter optimization and robust validation"""
-        logger.info(f"Training {model_name}...")
-        
-        try:
-            # Stratified cross-validation to handle imbalance
-            stratified_cv = StratifiedKFold(n_splits=self.cross_val_folds, shuffle=True, random_state=42)
-            
-            # Grid Search with stratified validation
-            grid_search = GridSearchCV(
-                model_config['model'](),
-                model_config['params'],
-                cv=stratified_cv,
-                scoring='roc_auc',  # Better metric for imbalanced data
-                n_jobs=-1,
-                verbose=2,
-                return_train_score=True  # To detect overfitting
-            )
-            
-            grid_search.fit(X_train, y_train)
-            best_model = grid_search.best_estimator_
-            
-            # Analyze overfitting with train vs validation scores
-            train_scores = grid_search.cv_results_['mean_train_score']
-            val_scores = grid_search.cv_results_['mean_test_score']
-            best_idx = grid_search.best_index_
-            
-            train_score_best = train_scores[best_idx]
-            val_score_best = val_scores[best_idx]
-            overfitting_gap = train_score_best - val_score_best
-            
-            # Predictions on validation
-            val_pred = best_model.predict(X_val)
-            val_proba = best_model.predict_proba(X_val)[:, 1]
-            
-            # Metrics
-            val_accuracy = accuracy_score(y_val, val_pred)
-            val_auc = roc_auc_score(y_val, val_proba)
-            
-            # Final cross-validation
-            cv_scores = cross_val_score(best_model, X_train, y_train, 
-                                      cv=stratified_cv, scoring='roc_auc')
-            
-            results = {
-                'model': best_model,
-                'best_params': grid_search.best_params_,
-                'val_accuracy': val_accuracy,
-                'val_auc': val_auc,
-                'cv_mean': cv_scores.mean(),
-                'cv_std': cv_scores.std(),
-                'train_score': train_score_best,
-                'val_score': val_score_best,
-                'overfitting_gap': overfitting_gap,
-                'classification_report': classification_report(y_val, val_pred, 
-                                                             target_names=self.label_encoder.classes_)
-            }
-            
-            # Overfitting alerts
-            if overfitting_gap > 0.05:
-                logger.warning(f"{model_name}: Possible overfitting detected (gap: {overfitting_gap:.3f})")
-            
-            logger.info(f"{model_name}: Accuracy={val_accuracy:.3f}, AUC={val_auc:.3f}, "
-                       f"CV={cv_scores.mean():.3f}(±{cv_scores.std():.3f}), Gap={overfitting_gap:.3f}")
-            
-            return results
-            
-        except Exception as e:
-            logger.error(f"Error {model_name}: {e}")
-            return None
-    
-    def train_all_models(self):
-        """Train all models"""
-        logger.info("Starting training...")
-        
-        # Load data
-        df = self.load_datasets()
-        if df is None:
-            return {}
-        
-        # Preprocessing
-        X, y, feature_names = self.preprocess_data(df)
-        
-        # Train/validation/test split (test first to keep original balance)
-        X_temp, X_test, y_temp, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42, stratify=y
+
+    # ---------- modeling ----------
+    def make_pipeline(self, base_model_cls, feature_names):
+        """
+        Pipeline = StandardScaler (sur colonnes numériques) + CalibratedClassifierCV(estimator=...).
+        Si SVC, on force probability=True pour autoriser predict_proba().
+        """
+        coltx = ColumnTransformer(
+            transformers=[("num", StandardScaler(), feature_names)],
+            remainder="drop"
         )
-        X_train, X_val, y_train, y_val = train_test_split(
-            X_temp, y_temp, test_size=0.25, random_state=42, stratify=y_temp
-        )
-        
-        # Balance only training data
-        if self.use_class_balancing:
-            logger.info("Applying class balancing...")
-            X_train_balanced, y_train_balanced = self.balance_dataset(X_train, y_train, method='smote')
+
+        # Construire l’estimateur de base
+        if base_model_cls is SVC or base_model_cls.__name__.lower() == "svc":
+            base_model = base_model_cls(probability=True, random_state=42)
         else:
-            X_train_balanced, y_train_balanced = X_train, y_train
-        
-        logger.info(f"Split: Train={len(X_train_balanced)}, Val={len(X_val)}, Test={len(X_test)}")
-        
-        # Train all models
-        trained_models = {}
-        best_model = None
-        best_auc = 0
-        
-        for model_name, model_config in self.models_config.items():
-            result = self.train_model(model_name, model_config, X_train_balanced, y_train_balanced, X_val, y_val)
-            
-            if result:
-                trained_models[model_name] = result
-                
-                # Final test
-                test_pred = result['model'].predict(X_test)
-                test_proba = result['model'].predict_proba(X_test)[:, 1]
-                test_accuracy = accuracy_score(y_test, test_pred)
-                test_auc = roc_auc_score(y_test, test_proba)
-                
-                logger.info(f"{model_name} Test: Accuracy={test_accuracy:.3f}, AUC={test_auc:.3f}")
-                
-                # Keep best model
-                if test_auc > best_auc:
-                    best_auc = test_auc
-                    best_model = (model_name, result['model'])
-                
-                # Save model
-                model_path = self.models_dir / f"{model_name}.pkl"
-                joblib.dump(result['model'], model_path)
-                logger.info(f"Model saved: {model_path}")
-                
-                # Detailed report
-                self.save_model_report(model_name, result, test_accuracy, test_auc, 
-                                     X_test, y_test, test_pred, len(X_train_balanced))
-        
-        # Save preprocessors
-        preprocessors = {
-            'scaler': self.scaler,
-            'label_encoder': self.label_encoder,
-            'feature_names': feature_names
+            try:
+                base_model = base_model_cls(random_state=42)
+            except TypeError:
+                base_model = base_model_cls()
+
+        # Calibration des probabilités
+        clf = CalibratedClassifierCV(estimator=base_model, method='isotonic', cv=3)
+
+        pipe = Pipeline(steps=[("pre", coltx), ("clf", clf)])
+        return pipe
+
+    def param_grid_for(self, model_config):
+        """
+        Mappe *tous* les hyperparamètres du modèle de base via :
+            'clf__estimator__<param>'
+        (CalibratedClassifierCV utilise 'estimator', pas 'base_estimator'.)
+        """
+        return {f"clf__estimator__{k}": v for k, v in model_config['params'].items()}
+
+    def train_model(self, model_name, model_config, X_train, y_train, X_val, y_val, feature_names):
+        """
+        Entraîne un modèle dans un Pipeline + GridSearch (compatible sklearn récent).
+        """
+        logger.info(f"Training {model_name}...")
+        pipe = self.make_pipeline(model_config['model'], feature_names)
+        param_grid = self.param_grid_for(model_config)
+
+        cv = StratifiedKFold(n_splits=self.cross_val_folds, shuffle=True, random_state=42)
+
+        grid = GridSearchCV(
+            estimator=pipe,
+            param_grid=param_grid,
+            cv=cv,
+            scoring='roc_auc',
+            n_jobs=-1,
+            verbose=2,
+            return_train_score=True
+        )
+
+        grid.fit(X_train, y_train)
+        best_pipe = grid.best_estimator_
+
+        # Validation : proba + seuil au FPR cible
+        val_proba = best_pipe.predict_proba(X_val)[:, 1]
+        val_pred_default = (val_proba >= 0.5).astype(int)
+        thr = pick_threshold_at_fpr(y_val, val_proba, target_fpr=self.fpr_target)
+        val_pred_tuned = (val_proba >= thr).astype(int)
+
+        # Métriques
+        val_acc_default = accuracy_score(y_val, val_pred_default)
+        val_acc_tuned = accuracy_score(y_val, val_pred_tuned)
+        val_auc = roc_auc_score(y_val, val_proba)
+
+        # Gap sur la meilleure config
+        train_scores = grid.cv_results_['mean_train_score']
+        val_scores = grid.cv_results_['mean_test_score']
+        best_idx = grid.best_index_
+        overfit_gap = float(train_scores[best_idx] - val_scores[best_idx])
+
+        logger.info(
+            f"{model_name}: Val AUC={val_auc:.3f} | Val Acc@0.5={val_acc_default:.3f} | "
+            f"Val Acc@thr={val_acc_tuned:.3f} (thr={thr:.3f}) | Gap={overfit_gap:.3f}"
+        )
+
+        return {
+            "pipeline": best_pipe,
+            "best_params": grid.best_params_,
+            "val_auc": float(val_auc),
+            "val_acc_default": float(val_acc_default),
+            "val_acc_tuned": float(val_acc_tuned),
+            "threshold": float(thr),
+            "overfitting_gap": float(overfit_gap),
         }
-        joblib.dump(preprocessors, self.models_dir / "preprocessors.pkl")
-        
-        if best_model:
-            logger.info(f"Best model: {best_model[0]} (Test AUC: {best_auc:.3f})")
-            # Save best model separately
-            joblib.dump(best_model[1], self.models_dir / "best_model.pkl")
-        
-        logger.info("Training completed!")
-        return trained_models
-    
-    def save_model_report(self, model_name, results, test_acc, test_auc, X_test, y_test, test_pred, train_size):
-        """Save detailed report with overfitting analysis"""
+
+    def save_model_report(self, model_name, results, test_acc_default, test_auc, test_acc_tuned,
+                          X_test, y_test, test_pred_default, test_pred_tuned, train_size):
         report_path = self.reports_dir / f"{model_name}_report.txt"
-        
-        # Overfitting analysis
         overfitting_status = "No overfitting detected"
         if results['overfitting_gap'] > 0.1:
             overfitting_status = "Severe overfitting detected"
         elif results['overfitting_gap'] > 0.05:
             overfitting_status = "Moderate overfitting detected"
-        
-        report_content = f"""
+
+        content = f"""
 === Training Report: {model_name} ===
 Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
@@ -443,134 +358,174 @@ Optimal Hyperparameters:
 
 Overfitting Analysis:
 {overfitting_status}
-- Train CV score: {results['train_score']:.4f}
-- Validation CV score: {results['val_score']:.4f}
-- Gap: {results['overfitting_gap']:.4f}
+- Gap (train AUC - val AUC): {results['overfitting_gap']:.4f}
 
 Validation Performance:
-- Accuracy: {results['val_accuracy']:.4f}
 - AUC-ROC: {results['val_auc']:.4f}
-- Cross-Validation: {results['cv_mean']:.4f} (±{results['cv_std']:.4f})
+- Accuracy @ 0.5: {results['val_acc_default']:.4f}
+- Accuracy @ tuned thr ({results['threshold']:.3f}): {results['val_acc_tuned']:.4f}
 
 Test Performance:
-- Accuracy: {test_acc:.4f}
 - AUC-ROC: {test_auc:.4f}
+- Accuracy @ 0.5: {test_acc_default:.4f}
+- Accuracy @ tuned thr ({results['threshold']:.3f}): {test_acc_tuned:.4f}
 
 Dataset Information:
 - Training samples: {train_size}
-- Validation samples: {len(X_test)}
 - Test samples: {len(X_test)}
 
-Classification Report (Validation):
-{results['classification_report']}
+Confusion Matrix (Test @ 0.5):
+{confusion_matrix(y_test, test_pred_default)}
 
-Confusion Matrix (Test):
-{confusion_matrix(y_test, test_pred)}
+Confusion Matrix (Test @ tuned thr):
+{confusion_matrix(y_test, test_pred_tuned)}
 
-Features used: {X_test.shape[1]}
 Classes: {list(self.label_encoder.classes_)}
 
-Anti-overfitting Recommendations:
-- ✓ Stratified cross-validation used
-- ✓ Regularization applied
-- ✓ Class balancing applied
-- ✓ Stratified train/val/test split
-- ✓ Hyperparameters optimized for generalization
+Notes:
+- ✔ Pipeline (StandardScaler + Model) sans fuite de données
+- ✔ Probabilités calibrées (isotonic)
+- ✔ Seuil choisi pour FPR ≈ {self.fpr_target:.2%} sur validation
+- ✔ Sauvegarde du pipeline + seuil
+- ⚠️ Utilise la même version sklearn pour charger les modèles
 """
-        
-        with open(report_path, 'w') as f:
-            f.write(report_content)
-    
-    def predict_new_data(self, model_name, new_data_df):
-        """Make predictions on new data (without labels)"""
-        try:
-            # Load model and preprocessors
+        with open(report_path, "w") as f:
+            f.write(content)
+
+    def train_all_models(self):
+        logger.info("Starting training...")
+
+        # 1) Charger et prétraiter
+        df = self.load_datasets()
+        if df is None:
+            return {}
+
+        X_all, y_all, feature_names = self.preprocess_data(df)
+
+        # 2) Split stratifié (60/20/20)
+        X_temp, X_test, y_temp, y_test = train_test_split(
+            X_all, y_all, test_size=0.2, random_state=42, stratify=y_all
+        )
+        X_train, X_val, y_train, y_val = train_test_split(
+            X_temp, y_temp, test_size=0.25, random_state=42, stratify=y_temp
+        )
+
+        # 3) Balancer seulement le train
+        if self.use_class_balancing:
+            X_train_bal, y_train_bal = self.balance_dataset(X_train, y_train, method='smote')
+        else:
+            X_train_bal, y_train_bal = X_train, y_train
+
+        logger.info(f"Split sizes: Train={len(X_train_bal)}, Val={len(X_val)}, Test={len(X_test)}")
+
+        # 4) Entraîner
+        trained = {}
+        best_model_name = None
+        best_auc = -np.inf
+        thresholds_registry = {}
+
+        for model_name, cfg in self.models_config.items():
+            res = self.train_model(model_name, cfg, X_train_bal, y_train_bal, X_val, y_val, feature_names)
+            if not res:
+                continue
+
+            pipe = res["pipeline"]
+            thr = res["threshold"]
+
+            # 5) Évaluation finale sur test
+            test_proba = pipe.predict_proba(X_test)[:, 1]
+            test_pred_default = (test_proba >= 0.5).astype(int)
+            test_pred_tuned = (test_proba >= thr).astype(int)
+
+            test_auc = roc_auc_score(y_test, test_proba)
+            test_acc_default = accuracy_score(y_test, test_pred_default)
+            test_acc_tuned = accuracy_score(y_test, test_pred_tuned)
+
+            logger.info(f"{model_name} Test: AUC={test_auc:.3f} | Acc@0.5={test_acc_default:.3f} | "
+                        f"Acc@thr({thr:.3f})={test_acc_tuned:.3f}")
+
+            # 6) Sauvegardes
             model_path = self.models_dir / f"{model_name}.pkl"
-            preprocessors_path = self.models_dir / "preprocessors.pkl"
-            
-            if not model_path.exists() or not preprocessors_path.exists():
-                logger.error("Model or preprocessors not found")
-                return None
-            
-            model = joblib.load(model_path)
-            preprocessors = joblib.load(preprocessors_path)
-            
-            # Preprocess new data
-            feature_names = preprocessors['feature_names']
-            available_features = [col for col in feature_names if col in new_data_df.columns]
-            
-            X_new = new_data_df[available_features]
-            
-            # Replace missing and infinite values
-            for col in available_features:
-                median_val = X_new[col].median()
-                X_new[col] = X_new[col].replace([np.inf, -np.inf], np.nan).fillna(median_val)
-            
-            # Normalize
-            X_scaled = preprocessors['scaler'].transform(X_new)
-            
-            # Predictions
-            predictions = model.predict(X_scaled)
-            probabilities = model.predict_proba(X_scaled)
-            
-            # Convert predictions to labels
-            predicted_labels = preprocessors['label_encoder'].inverse_transform(predictions)
-            
-            return {
-                'predictions': predicted_labels,
-                'probabilities': probabilities,
-                'confidence': np.max(probabilities, axis=1)
+            joblib.dump(pipe, model_path)
+            logger.info(f"Model (pipeline) saved: {model_path}")
+
+            # Export "preprocessors.pkl" pour compat avec ton predictor actuel
+            try:
+                pre = pipe.named_steps['pre']
+                scaler = None
+                for name, trans, cols in pre.transformers_:
+                    if name == 'num':
+                        scaler = trans
+                        break
+                preprocessors = {
+                    'scaler': scaler,                    # fitted StandardScaler
+                    'label_encoder': self.label_encoder, # fitted LabelEncoder
+                    'feature_names': feature_names       # ordre attendu
+                }
+                joblib.dump(preprocessors, self.models_dir / "preprocessors.pkl")
+            except Exception as e:
+                logger.warning(f"Could not export preprocessors.pkl: {e}")
+
+            # Seuils par modèle
+            thresholds_registry[model_name] = {
+                "threshold": thr,
+                "picked_on": "validation",
+                "target_fpr": self.fpr_target
             }
-            
-        except Exception as e:
-            logger.error(f"Prediction error: {e}")
-            return None
+            with open(self.models_dir / "thresholds.json", "w") as f:
+                json.dump(thresholds_registry, f, indent=2)
+
+            # Rapport
+            self.save_model_report(
+                model_name, res, test_acc_default, test_auc, test_acc_tuned,
+                X_test, y_test, test_pred_default, test_pred_tuned, len(X_train_bal)
+            )
+
+            trained[model_name] = {
+                "path": str(model_path),
+                "val_auc": res["val_auc"],
+                "test_auc": float(test_auc),
+                "threshold": thr
+            }
+
+            if test_auc > best_auc:
+                best_auc = test_auc
+                best_model_name = model_name
+                joblib.dump(pipe, self.models_dir / "best_model.pkl")
+
+        # 7) Metadata
+        meta = {
+            "sklearn_version": sklearn.__version__,
+            "trained_at": datetime.now().isoformat(),
+            "features": feature_names,
+            "label_classes": list(self.label_encoder.classes_),
+            "best_model": best_model_name,
+            "fpr_target": self.fpr_target
+        }
+        with open(self.models_dir / "metadata.json", "w") as f:
+            json.dump(meta, f, indent=2)
+
+        logger.info(f"Training completed! Best: {best_model_name} (AUC={best_auc:.3f})")
+        return trained
+
 
 def main():
-    """Main entry point"""
-    parser = argparse.ArgumentParser(description='ML trainer for network flow datasets')
-    parser.add_argument('--quick', action='store_true', 
-                       help='Quick mode: limit dataset to 2000 samples for fast training')
-    
+    parser = argparse.ArgumentParser(description="Network flow ML trainer (Pipeline + Calibration + Threshold)")
+    parser.add_argument('--quick', action='store_true', help='Quick mode')
+    parser.add_argument('--fpr', type=float, default=0.01, help='FPR target for threshold tuning (default: 0.01)')
     args = parser.parse_args()
-    
+
+    logger.info(f"scikit-learn version: {sklearn.__version__}")
     if args.quick:
-        logger.info("QUICK mode activated - Fast training with 2000 max samples")
-    
-    trainer = NetworkFlowMLTrainer(quick_mode=args.quick)
-    
+        logger.info("QUICK mode activated")
+
+    trainer = NetworkFlowMLTrainer(quick_mode=args.quick, fpr_target=args.fpr)
     try:
-        models = trainer.train_all_models()
-        logger.info(f"Training completed! {len(models)} models created.")
-        
-        if args.quick:
-            logger.info("Quick mode completed - For full training, run without --quick")
-        
-        # Quick prediction test
-        logger.info("Testing prediction...")
-        
-        # Load sample for testing
-        datasets_dir = Path("../datasets")
-        test_file = next(datasets_dir.glob("*.csv"), None)
-        
-        if test_file:
-            sample_df = pd.read_csv(test_file).head(5)
-            # Remove Label column to simulate new data
-            sample_df_no_label = sample_df.drop('Label', axis=1)
-            
-            # Test with best model if it exists
-            if (trainer.models_dir / "best_model.pkl").exists():
-                # Use any model for testing
-                model_files = list(trainer.models_dir.glob("*.pkl"))
-                if model_files:
-                    model_name = model_files[0].stem
-                    if model_name != "preprocessors" and model_name != "best_model":
-                        predictions = trainer.predict_new_data(model_name, sample_df_no_label)
-                        if predictions:
-                            logger.info(f"Test predictions: {predictions['predictions']}")
-        
+        trainer.train_all_models()
     except Exception as e:
         logger.error(f"Fatal error: {e}")
+        raise
+
 
 if __name__ == "__main__":
     main()
