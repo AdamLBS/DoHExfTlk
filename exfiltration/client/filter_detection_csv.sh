@@ -2,84 +2,70 @@
 set -euo pipefail
 
 # --- Config ---------------------------------------------------------------
-INPUT_CSV="${1:-/traffic_analyzer/output/output.csv}"         # ou passe le chemin en 1er argument
-OUTPUT_DIR="${OUTPUT_DIR:-/app/captured}"        # override via variable d'env
+INPUT_CSV="${1:-/traffic_analyzer/output/output.csv}"
+OUTPUT_DIR="${OUTPUT_DIR:-/app/captured}"
 mkdir -p "$OUTPUT_DIR"
 
-# --- Récup IP du conteneur ------------------------------------------------
+# --- IP du conteneur ------------------------------------------------------
 get_container_ip() {
   local ip=""
-  # Méthode robuste: IP utilisée pour sortir vers Internet
   if command -v ip &>/dev/null; then
-    ip="$(ip route get 1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") {print $(i+1); exit}}' || true)"
+    ip="$(ip route get 1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit}}' || true)"
   fi
-  # Fallback: hostname -I
-  if [[ -z "${ip}" ]] && command -v hostname &>/dev/null; then
+  if [[ -z "$ip" ]] && command -v hostname &>/dev/null; then
     ip="$(hostname -I 2>/dev/null | awk '{print $1}' || true)"
   fi
-  # Fallback: eth0
-  if [[ -z "${ip}" ]] && command -v ip &>/dev/null; then
+  if [[ -z "$ip" ]] && command -v ip &>/dev/null; then
     ip="$(ip -o -4 addr show dev eth0 2>/dev/null | awk '{print $4}' | cut -d/ -f1 || true)"
   fi
-
-  if [[ -z "${ip}" ]]; then
-    echo "[❌] Impossible de déterminer l'IP du conteneur." >&2
-    exit 1
-  fi
+  [[ -n "$ip" ]] || { echo "Impossible de déterminer l'IP du conteneur." >&2; exit 1; }
   echo "$ip"
 }
-
 CONTAINER_IP="$(get_container_ip)"
-echo "[✅] IP du conteneur: ${CONTAINER_IP}"
 
-if [[ ! -f "$INPUT_CSV" ]]; then
-  echo "[❌] Fichier introuvable: $INPUT_CSV" >&2
-  exit 1
-fi
+[[ -f "$INPUT_CSV" ]] || { echo "Fichier introuvable: $INPUT_CSV" >&2; exit 1; }
 
 base="$(basename "$INPUT_CSV")"
 stem="${base%.csv}"
 OUTPUT_CSV="${OUTPUT_DIR}/${stem}.only_${CONTAINER_IP}.csv"
 
-# --- Filtrage CSV ---------------------------------------------------------
-# 1) Essaye de filtrer proprement sur les colonnes SourceIP/DestinationIP (si présentes)
-# 2) Sinon, fallback: conserve les lignes contenant l'IP (grep)
-awk -v ip="$CONTAINER_IP" -F',' '
+tmp_file="$(mktemp)"
+trap 'rm -f "$tmp_file"' EXIT
+
+# --- 1 passe, uniquement via SourceIP/DestinationIP -----------------------
+awk -v ip="$CONTAINER_IP" -F',' -v out_match="$OUTPUT_CSV" -v out_keep="$tmp_file" '
+  function stripq(x){ gsub(/^"|"$/, "", x); return x }
+
   NR==1 {
-    # normaliser l’en-tête (enlever guillemets)
-    for (i=1;i<=NF;i++) { gsub(/"/, "", $i); hdr[$i]=i }
-    print $0
+    # indexe les colonnes
+    for (i=1;i<=NF;i++){ h=$i; gsub(/"/,"",h); idx[h]=i }
+    if (!("SourceIP" in idx) && !("DestinationIP" in idx)) {
+      printf "Colonnes SourceIP/DestinationIP introuvables.\n" > "/dev/stderr"
+      exit 2
+    }
+    s = ("SourceIP" in idx) ? idx["SourceIP"] : 0
+    d = ("DestinationIP" in idx) ? idx["DestinationIP"] : 0
+    # entête dans les deux sorties
+    print $0 > out_match
+    print $0 > out_keep
     next
   }
+
   {
-    # Si colonnes présentes, filtre exact sur SourceIP/DestinationIP
-    if (("SourceIP" in hdr) || ("DestinationIP" in hdr)) {
-      s = ("SourceIP" in hdr) ? hdr["SourceIP"] : 0
-      d = ("DestinationIP" in hdr) ? hdr["DestinationIP"] : 0
-
-      # enlever guillemets éventuels autour des champs comparés
-      if (s && $s == "\"" ip "\"") $s = ip
-      if (d && $d == "\"" ip "\"") $d = ip
-
-      if ((s && $s == ip) || (d && $d == ip)) print $0
+    sval = (s ? stripq($s) : "")
+    dval = (d ? stripq($d) : "")
+    if ( (s && sval==ip) || (d && dval==ip) ) {
+      print $0 >> out_match
     } else {
-      # Pas d’info colonnes -> on passe la main (signal au shell)
-      exit 99
+      print $0 >> out_keep
     }
   }
-' "$INPUT_CSV" > "$OUTPUT_CSV" || {
-  # Fallback si awk a quitté avec code 99 (pas de colonnes IP)
-  if [[ $? -eq 99 ]]; then
-    echo "[ℹ️] Colonnes SourceIP/DestinationIP non trouvées, fallback grep."
-    {
-      IFS= read -r header
-      printf "%s\n" "$header"
-      grep -F "$CONTAINER_IP" || true
-    } < "$INPUT_CSV" > "$OUTPUT_CSV"
-  else
-    echo "[❌] Erreur inattendue lors du filtrage." >&2
-    exit 1
-  fi
-}
+' "$INPUT_CSV"
 
-echo "[✅] CSV filtré créé: $OUTPUT_CSV"
+# Remplace l’original par les lignes gardées (avec entête)
+mv -f "$tmp_file" "$INPUT_CSV"
+chown "1000:1000" "$INPUT_CSV"
+trap - EXIT
+
+echo "✅ Filtré → $OUTPUT_CSV"
+echo "✅ Supprimé du fichier original (entête conservé) → $INPUT_CSV"

@@ -1,0 +1,43 @@
+{
+  "sklearn_version": "1.6.1",
+  "trained_at": "2025-08-14T15:51:46.050048",
+  "features": [
+    "SourcePort",
+    "DestinationPort",
+    "Duration",
+    "FlowBytesSent",
+    "FlowSentRate",
+    "FlowBytesReceived",
+    "FlowReceivedRate",
+    "PacketLengthVariance",
+    "PacketLengthStandardDeviation",
+    "PacketLengthMean",
+    "PacketLengthMedian",
+    "PacketLengthMode",
+    "PacketLengthSkewFromMedian",
+    "PacketLengthSkewFromMode",
+    "PacketLengthCoefficientofVariation",
+    "PacketTimeVariance",
+    "PacketTimeStandardDeviation",
+    "PacketTimeMean",
+    "PacketTimeMedian",
+    "PacketTimeMode",
+    "PacketTimeSkewFromMedian",
+    "PacketTimeSkewFromMode",
+    "PacketTimeCoefficientofVariation",
+    "ResponseTimeTimeVariance",
+    "ResponseTimeTimeStandardDeviation",
+    "ResponseTimeTimeMean",
+    "ResponseTimeTimeMedian",
+    "ResponseTimeTimeMode",
+    "ResponseTimeTimeSkewFromMedian",
+    "ResponseTimeTimeSkewFromMode",
+    "ResponseTimeTimeCoefficientofVariation"
+  ],
+  "label_classes": [
+    "Benign",
+    "Malicious"
+  ],
+  "best_model": "random_forest",
+  "fpr_target": 0.01
+}

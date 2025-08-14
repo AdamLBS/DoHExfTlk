@@ -1,0 +1,22 @@
+{
+  "name": "Low Speed Exfiltration",
+  "description": "Low speed exfiltration test configuration with small chunks and base32 encoding.",
+  "exfiltration_config": {
+    "doh_server": "https://doh.local/dns-query",
+    "target_domain": "exfill.local",
+    "chunk_size": 15,
+    "encoding": "base32",
+    "timing_pattern": "random",
+    "base_delay": 2.5,
+    "compression": true,
+    "encryption": false,
+    "subdomain_randomization": true,
+    "padding": true,
+    "domain_rotation": true,
+    "delay_variance": 5.0
+  },
+  "test_files": [
+    "test_data/image.png"
+  ],
+  "notes": "Petits chunks, encodage base32, compression, padding, rotation de domaine et gros délais random"
+}

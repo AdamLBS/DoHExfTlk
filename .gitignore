@@ -13,3 +13,4 @@ sniffer/output/
 traffic_analyzer/output/
 exfiltration/client/captured/
 exfiltration/server/captured/
+exfiltration/client/results/

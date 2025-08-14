@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y \
     dnsutils \
     iputils-ping \
     net-tools \
+    docker.io \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -20,6 +21,7 @@ COPY json_config_loader.py .
 COPY run_client.py .
 COPY config_generator.py .
 COPY filter_detection_csv.sh .
+COPY run_pipeline.sh .
 
 # Create directories for test data and configurations
 RUN mkdir -p test_data captured test_configs

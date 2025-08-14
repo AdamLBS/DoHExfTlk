@@ -140,6 +140,7 @@ services:
       - ./traffic_analyzer/output:/traffic_analyzer/output
       - ./ml_analyzer/:/ml
       - ./models:/models
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       - DOH_SERVER=https://doh.local/dns-query
       - TARGET_DOMAIN=exfill.local
