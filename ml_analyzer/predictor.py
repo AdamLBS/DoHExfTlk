@@ -30,7 +30,6 @@ NUMERIC_FEATURES = [
 
 MODELS_DIR = Path("../models")
 
-# ----------------[ Load thresholds.json ]----------------
 def load_thresholds():
     thr_path = MODELS_DIR / "thresholds.json"
     if thr_path.exists():
@@ -42,9 +41,7 @@ def load_thresholds():
             log.warning(f"⚠️ Could not read thresholds.json: {e}")
     return {}
 
-# ----------------[ Load trained models ]----------------
 def load_pipelines():
-    """Loads all *.pkl in ../models/ (except best_model.pkl & preprocessors.pkl)."""
     loaded = {}
     for pkl in MODELS_DIR.glob("*.pkl"):
         name = pkl.stem
@@ -56,14 +53,13 @@ def load_pipelines():
                 log.warning(f"⚠️ {name}: no predict_proba — skipped")
                 continue
             loaded[name] = model
-            log.info(f"✅ Loaded model: {name}")
+            log.info(f"Loaded model: {name}")
         except Exception as e:
-            log.error(f"❌ Error loading {pkl}: {e}")
+            log.error(f"Error loading {pkl}: {e}")
     return loaded
 
-# ----------------[ Load CSV ]----------------
 def load_csv_as_dataframe(csv_path: Path) -> pd.DataFrame:
-    log.info(f"📊 Loading data: {csv_path}")
+    log.info(f"Loading data: {csv_path}")
     df = pd.read_csv(csv_path)
     if "Label" in df.columns:
         df = df.drop(columns=["Label"])
@@ -76,12 +72,10 @@ def load_csv_as_dataframe(csv_path: Path) -> pd.DataFrame:
         if s.isnull().any():
             s = s.fillna(s.median())
         df[col] = s
-    log.info(f"📊 Features used: {df.shape[1]}/{len(NUMERIC_FEATURES)}")
+    log.info(f"Features used: {df.shape[1]}/{len(NUMERIC_FEATURES)}")
     return df
 
-# ----------------[ DoHXP rule-based model ]----------------
 def load_dohxp_model(config_path: Path):
-    """Loads a DoHXP-style threshold model from JSON."""
     with open(config_path, "r") as f:
         cfg = json.load(f)
     rules = cfg.get("rules", [])
@@ -121,7 +115,6 @@ def load_dohxp_model(config_path: Path):
 
     return type("DoHXPModel", (), {"predict_proba": staticmethod(predict_proba)})
 
-# ----------------[ Summarize predictions ]----------------
 def summarize_predictions(model_name, y_pred, y_proba, threshold):
     benign = int((y_pred == 0).sum())
     malic = int((y_pred == 1).sum())
@@ -133,7 +126,6 @@ def summarize_predictions(model_name, y_pred, y_proba, threshold):
     log.info(f"   - Avg confidence: {conf:.3f}")
     return benign, malic, conf
 
-# ----------------[ Main ]----------------
 def main():
     parser = argparse.ArgumentParser(description="Predictor for network flow CSV using trained pipelines + DoHXP model")
     parser.add_argument("csv_path", help="Path to CSV without Label column")
@@ -146,21 +138,20 @@ def main():
     thresholds = load_thresholds()
     models = load_pipelines()
 
-    # Add DoHXP model if config exists
     if args.dohxp_config.exists():
         models["dohxp"] = load_dohxp_model(args.dohxp_config)
-        log.info(f"✅ Loaded DoHXP rule-based model from {args.dohxp_config}")
+        log.info(f"Loaded DoHXP rule-based model from {args.dohxp_config}")
     else:
-        log.warning(f"⚠️ DoHXP model config not found: {args.dohxp_config}")
+        log.warning(f"DoHXP model config not found: {args.dohxp_config}")
 
     if not models:
-        log.error("❌ No models loaded from ../models — did you train or add them?")
+        log.error("No models loaded from ../models")
         return
 
     df = load_csv_as_dataframe(Path(args.csv_path))
 
     overall = []
-    log.info("📊 === PREDICTIONS ===")
+    log.info("=== PREDICTIONS ===")
     for name, model in models.items():
         try:
             proba = model.predict_proba(df)[:, 1]
@@ -169,10 +160,10 @@ def main():
             b, m, c = summarize_predictions(name, pred, proba, thr)
             overall.append((name, b, m, len(pred), c, thr))
         except Exception as e:
-            log.error(f"❌ Error predicting with {name}: {e}")
+            log.error(f"Error predicting with {name}: {e}")
 
     if overall:
-        log.info("\n📊 === SUMMARY OF PREDICTIONS ===\n")
+        log.info("\n=== SUMMARY OF PREDICTIONS ===\n")
         header = f"{'Model':<24} {'Benign':>8} {'Malicious':>12} {'Total':>10} {'Threshold':>8} {'Confidence':>12}"
         sep = "-" * len(header)
         print(header)
