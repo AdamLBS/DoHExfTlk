@@ -12,7 +12,6 @@ import joblib
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 log = logging.getLogger("predictor")
 
-# Expected features (fixed order)
 NUMERIC_FEATURES = [
     'SourcePort', 'DestinationPort', 'Duration',
     'FlowBytesSent', 'FlowSentRate', 'FlowBytesReceived', 'FlowReceivedRate',
