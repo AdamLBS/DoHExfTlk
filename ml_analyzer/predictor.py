@@ -12,7 +12,7 @@ import joblib
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 log = logging.getLogger("predictor")
 
-# Les 31 features attendues (ordre figé)
+# Expected features (fixed order)
 NUMERIC_FEATURES = [
     'SourcePort', 'DestinationPort', 'Duration',
     'FlowBytesSent', 'FlowSentRate', 'FlowBytesReceived', 'FlowReceivedRate',
@@ -30,6 +30,7 @@ NUMERIC_FEATURES = [
 
 MODELS_DIR = Path("../models")
 
+# ----------------[ Load thresholds.json ]----------------
 def load_thresholds():
     thr_path = MODELS_DIR / "thresholds.json"
     if thr_path.exists():
@@ -38,11 +39,12 @@ def load_thresholds():
                 data = json.load(f)
             return {k: float(v.get("threshold", 0.5)) for k, v in data.items()}
         except Exception as e:
-            log.warning(f"⚠️ Impossible de lire thresholds.json: {e}")
+            log.warning(f"⚠️ Could not read thresholds.json: {e}")
     return {}
 
+# ----------------[ Load trained models ]----------------
 def load_pipelines():
-    """Charge tous les *.pkl dans ../models/ (sauf best_model.pkl et preprocessors.pkl)."""
+    """Loads all *.pkl in ../models/ (except best_model.pkl & preprocessors.pkl)."""
     loaded = {}
     for pkl in MODELS_DIR.glob("*.pkl"):
         name = pkl.stem
@@ -50,94 +52,135 @@ def load_pipelines():
             continue
         try:
             model = joblib.load(pkl)
-            # sanity check: doit implémenter predict_proba
             if not hasattr(model, "predict_proba"):
-                log.warning(f"⚠️ {name}: pas de predict_proba — ignoré")
+                log.warning(f"⚠️ {name}: no predict_proba — skipped")
                 continue
             loaded[name] = model
-            log.info(f"✅ Modèle chargé: {name}")
+            log.info(f"✅ Loaded model: {name}")
         except Exception as e:
-            log.error(f"❌ Erreur chargement {pkl}: {e}")
+            log.error(f"❌ Error loading {pkl}: {e}")
     return loaded
 
+# ----------------[ Load CSV ]----------------
 def load_csv_as_dataframe(csv_path: Path) -> pd.DataFrame:
-    log.info(f"📊 Chargement données: {csv_path}")
+    log.info(f"📊 Loading data: {csv_path}")
     df = pd.read_csv(csv_path)
-    # si une colonne Label traîne, on l’enlève
     if "Label" in df.columns:
         df = df.drop(columns=["Label"])
-
-    # S’assure que toutes les colonnes existent (colonnes manquantes → NaN)
     for col in NUMERIC_FEATURES:
         if col not in df.columns:
             df[col] = np.nan
-
-    # Réordonner exactement comme attendu
     df = df[NUMERIC_FEATURES]
-
-    # Nettoyage: numeric + fillna(median) par colonne
     for col in NUMERIC_FEATURES:
         s = pd.to_numeric(df[col], errors="coerce")
         if s.isnull().any():
             s = s.fillna(s.median())
         df[col] = s
-
-    log.info(f"📊 Features utilisées: {df.shape[1]}/{len(NUMERIC_FEATURES)}")
+    log.info(f"📊 Features used: {df.shape[1]}/{len(NUMERIC_FEATURES)}")
     return df
 
+# ----------------[ DoHXP rule-based model ]----------------
+def load_dohxp_model(config_path: Path):
+    """Loads a DoHXP-style threshold model from JSON."""
+    with open(config_path, "r") as f:
+        cfg = json.load(f)
+    rules = cfg.get("rules", [])
+    clip_low, clip_high = cfg.get("clip", [0.0, 1.0])
+    bias = float(cfg.get("bias", 0.0))
+    agg = cfg.get("aggregation", "sum").lower()
+
+    def predict_proba(X: pd.DataFrame):
+        scores = []
+        for _, row in X.iterrows():
+            hits = []
+            for r in rules:
+                feat = r["feature"]
+                op = r["op"]
+                thr = r["value"]
+                weight = r.get("weight", 1.0)
+                val = row[feat]
+                hit = False
+                if op == ">": hit = val > thr
+                elif op == "<": hit = val < thr
+                elif op == ">=": hit = val >= thr
+                elif op == "<=": hit = val <= thr
+                elif op == "==": hit = val == thr
+                elif op == "!=": hit = val != thr
+                if hit:
+                    hits.append(weight)
+            if agg == "mean" and hits:
+                score = sum(hits) / len(rules)
+            else:
+                score = sum(hits)
+            score += bias
+            score = max(clip_low, min(clip_high, score))
+            scores.append(score)
+        p1 = np.array(scores)
+        p0 = 1.0 - p1
+        return np.vstack([p0, p1]).T
+
+    return type("DoHXPModel", (), {"predict_proba": staticmethod(predict_proba)})
+
+# ----------------[ Summarize predictions ]----------------
 def summarize_predictions(model_name, y_pred, y_proba, threshold):
-    # y_pred already thresholded; confidence = max(p, 1-p)
     benign = int((y_pred == 0).sum())
     malic = int((y_pred == 1).sum())
     conf = np.maximum(y_proba, 1.0 - y_proba).mean() if len(y_proba) else float("nan")
     log.info(f"🤖 {model_name.upper()}:")
     log.info(f"   - Benign: {benign}")
     log.info(f"   - Malicious: {malic}")
-    log.info(f"   - Seuil appliqué: {threshold:.3f}")
-    log.info(f"   - Confiance moyenne: {conf:.3f}")
+    log.info(f"   - Threshold applied: {threshold:.3f}")
+    log.info(f"   - Avg confidence: {conf:.3f}")
     return benign, malic, conf
 
+# ----------------[ Main ]----------------
 def main():
-    parser = argparse.ArgumentParser(description="Predictor for network flow CSV using trained pipelines")
-    parser.add_argument("csv_path", help="Chemin vers le CSV de flux (sans Label)")
+    parser = argparse.ArgumentParser(description="Predictor for network flow CSV using trained pipelines + DoHXP model")
+    parser.add_argument("csv_path", help="Path to CSV without Label column")
     parser.add_argument("--default-threshold", type=float, default=0.5,
-                        help="Seuil par défaut si non trouvé dans thresholds.json (0.5)")
+                        help="Default threshold if not found in thresholds.json")
+    parser.add_argument("--dohxp-config", type=Path, default=MODELS_DIR / "dohxp_model.json",
+                        help="Path to DoHXP model JSON")
     args = parser.parse_args()
 
-    # 1) Charger pipelines + seuils
     thresholds = load_thresholds()
     models = load_pipelines()
+
+    # Add DoHXP model if config exists
+    if args.dohxp_config.exists():
+        models["dohxp"] = load_dohxp_model(args.dohxp_config)
+        log.info(f"✅ Loaded DoHXP rule-based model from {args.dohxp_config}")
+    else:
+        log.warning(f"⚠️ DoHXP model config not found: {args.dohxp_config}")
+
     if not models:
-        log.error("❌ Aucun modèle chargé dans ../models — as-tu bien entraîné/sauvegardé ?")
+        log.error("❌ No models loaded from ../models — did you train or add them?")
         return
 
-    # 2) Charger CSV en **DataFrame** (important !)
     df = load_csv_as_dataframe(Path(args.csv_path))
 
     overall = []
-    log.info("📊 === PRÉDICTIONS ===")
-    for name, pipe in models.items():
+    log.info("📊 === PREDICTIONS ===")
+    for name, model in models.items():
         try:
-            # proba de la classe 1 (Malicious)
-            proba = pipe.predict_proba(df)[:, 1]
+            proba = model.predict_proba(df)[:, 1]
             thr = thresholds.get(name, args.default_threshold)
             pred = (proba >= thr).astype(int)
             b, m, c = summarize_predictions(name, pred, proba, thr)
             overall.append((name, b, m, len(pred), c, thr))
         except Exception as e:
-            log.error(f"❌ Erreur prédiction {name}: {e}")
+            log.error(f"❌ Error predicting with {name}: {e}")
 
-    # 3) Résumé global
     if overall:
-        log.info("\n📊 === RÉSUMÉ DES PRÉDICTIONS ===\n")
-        header = f"{'Modèle':<24} {'Benign':>8} {'Malicious':>12} {'Total':>10} {'Seuil':>8} {'Confiance':>12}"
+        log.info("\n📊 === SUMMARY OF PREDICTIONS ===\n")
+        header = f"{'Model':<24} {'Benign':>8} {'Malicious':>12} {'Total':>10} {'Threshold':>8} {'Confidence':>12}"
         sep = "-" * len(header)
         print(header)
         print(sep)
         for (name, b, m, tot, c, thr) in overall:
             print(f"{name:<24} {b:>8} {m:>12} {tot:>10} {thr:>8.3f} {c:>12.3f}")
     else:
-        log.info("Aucun résultat exploitable.")
+        log.info("No usable results.")
 
 if __name__ == "__main__":
     main()

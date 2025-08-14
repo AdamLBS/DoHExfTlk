@@ -1,0 +1,10 @@
+{
+  "rules": [
+    { "feature": "PacketLengthMean", "op": ">", "value": 400, "weight": 0.6 },
+    { "feature": "PacketTimeVariance", "op": "<", "value": 0.001, "weight": 0.5 },
+    { "feature": "FlowReceivedRate", "op": ">", "value": 20000, "weight": 0.4 }
+  ],
+  "aggregation": "sum",
+  "clip": [0.0, 1.0],
+  "bias": 0.0
+}

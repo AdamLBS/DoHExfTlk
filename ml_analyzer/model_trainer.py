@@ -52,19 +52,16 @@ class NetworkFlowMLTrainer:
         self.quick_mode = quick_mode
         self.max_samples = 10000 if quick_mode else None
         self.fpr_target = fpr_target
-        self.group_col = group_col  # réservé si tu veux du GroupKFold plus tard
+        self.group_col = group_col
 
         self.setup_directories()
 
-        # Encodage des labels
         self.label_encoder = LabelEncoder()
 
-        # Balancement
         self.smote = SMOTE(random_state=42)
         self.use_class_balancing = True
         self.cross_val_folds = 3 if quick_mode else 5
 
-        # Tes features numériques
         self.numeric_features = [
             'SourcePort', 'DestinationPort', 'Duration',
             'FlowBytesSent', 'FlowSentRate', 'FlowBytesReceived', 'FlowReceivedRate',
@@ -80,7 +77,6 @@ class NetworkFlowMLTrainer:
             'ResponseTimeTimeCoefficientofVariation'
         ]
 
-        # Espace de recherche (calibrage systématique)
         if quick_mode:
             self.models_config = {
                 'random_forest': {
@@ -145,18 +141,16 @@ class NetworkFlowMLTrainer:
                     }
                 },
                 'svm': {
-                    'model': SVC,  # on forcera probability=True dans make_pipeline()
+                    'model': SVC,
                     'params': {
                         'C': [0.1, 1, 5],
                         'kernel': ['rbf', 'linear'],
                         'gamma': ['scale', 'auto', 0.1],
                         'class_weight': ['balanced'] if self.use_class_balancing else [None],
-                        # probability est forcé dans make_pipeline, inutile ici
                     }
                 }
             }
 
-    # ---------- infra ----------
     def setup_directories(self):
         self.models_dir = Path("../models")
         self.reports_dir = Path("../ml_reports")
@@ -164,7 +158,6 @@ class NetworkFlowMLTrainer:
         self.reports_dir.mkdir(exist_ok=True, parents=True)
         logger.info(f"Directories created: {self.models_dir}, {self.reports_dir}")
 
-    # ---------- data ----------
     def load_datasets(self):
         logger.info("Loading datasets...")
         datasets_dir = Path("../datasets")
@@ -204,11 +197,9 @@ class NetworkFlowMLTrainer:
         return combined_df
 
     def preprocess_data(self, df: pd.DataFrame):
-        """NE PAS SCALER ICI — on nettoie et on garde les features en DataFrame."""
         dfp = df.copy()
         available = [c for c in self.numeric_features if c in dfp.columns]
 
-        # Nettoyage valeurs manquantes/infinies via médiane
         for col in available:
             s = pd.to_numeric(dfp[col], errors='coerce')
             s = s.replace([np.inf, -np.inf], np.nan)
@@ -251,18 +242,12 @@ class NetworkFlowMLTrainer:
             logger.error(f"Balancing error: {e}")
             return X, y
 
-    # ---------- modeling ----------
     def make_pipeline(self, base_model_cls, feature_names):
-        """
-        Pipeline = StandardScaler (sur colonnes numériques) + CalibratedClassifierCV(estimator=...).
-        Si SVC, on force probability=True pour autoriser predict_proba().
-        """
         coltx = ColumnTransformer(
             transformers=[("num", StandardScaler(), feature_names)],
             remainder="drop"
         )
 
-        # Construire l’estimateur de base
         if base_model_cls is SVC or base_model_cls.__name__.lower() == "svc":
             base_model = base_model_cls(probability=True, random_state=42)
         else:
@@ -271,24 +256,15 @@ class NetworkFlowMLTrainer:
             except TypeError:
                 base_model = base_model_cls()
 
-        # Calibration des probabilités
         clf = CalibratedClassifierCV(estimator=base_model, method='isotonic', cv=3)
 
         pipe = Pipeline(steps=[("pre", coltx), ("clf", clf)])
         return pipe
 
     def param_grid_for(self, model_config):
-        """
-        Mappe *tous* les hyperparamètres du modèle de base via :
-            'clf__estimator__<param>'
-        (CalibratedClassifierCV utilise 'estimator', pas 'base_estimator'.)
-        """
         return {f"clf__estimator__{k}": v for k, v in model_config['params'].items()}
 
     def train_model(self, model_name, model_config, X_train, y_train, X_val, y_val, feature_names):
-        """
-        Entraîne un modèle dans un Pipeline + GridSearch (compatible sklearn récent).
-        """
         logger.info(f"Training {model_name}...")
         pipe = self.make_pipeline(model_config['model'], feature_names)
         param_grid = self.param_grid_for(model_config)
@@ -308,18 +284,15 @@ class NetworkFlowMLTrainer:
         grid.fit(X_train, y_train)
         best_pipe = grid.best_estimator_
 
-        # Validation : proba + seuil au FPR cible
         val_proba = best_pipe.predict_proba(X_val)[:, 1]
         val_pred_default = (val_proba >= 0.5).astype(int)
         thr = pick_threshold_at_fpr(y_val, val_proba, target_fpr=self.fpr_target)
         val_pred_tuned = (val_proba >= thr).astype(int)
 
-        # Métriques
         val_acc_default = accuracy_score(y_val, val_pred_default)
         val_acc_tuned = accuracy_score(y_val, val_pred_tuned)
         val_auc = roc_auc_score(y_val, val_proba)
 
-        # Gap sur la meilleure config
         train_scores = grid.cv_results_['mean_train_score']
         val_scores = grid.cv_results_['mean_test_score']
         best_idx = grid.best_index_
@@ -340,69 +313,15 @@ class NetworkFlowMLTrainer:
             "overfitting_gap": float(overfit_gap),
         }
 
-    def save_model_report(self, model_name, results, test_acc_default, test_auc, test_acc_tuned,
-                          X_test, y_test, test_pred_default, test_pred_tuned, train_size):
-        report_path = self.reports_dir / f"{model_name}_report.txt"
-        overfitting_status = "No overfitting detected"
-        if results['overfitting_gap'] > 0.1:
-            overfitting_status = "Severe overfitting detected"
-        elif results['overfitting_gap'] > 0.05:
-            overfitting_status = "Moderate overfitting detected"
-
-        content = f"""
-=== Training Report: {model_name} ===
-Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-
-Optimal Hyperparameters:
-{json.dumps(results['best_params'], indent=2)}
-
-Overfitting Analysis:
-{overfitting_status}
-- Gap (train AUC - val AUC): {results['overfitting_gap']:.4f}
-
-Validation Performance:
-- AUC-ROC: {results['val_auc']:.4f}
-- Accuracy @ 0.5: {results['val_acc_default']:.4f}
-- Accuracy @ tuned thr ({results['threshold']:.3f}): {results['val_acc_tuned']:.4f}
-
-Test Performance:
-- AUC-ROC: {test_auc:.4f}
-- Accuracy @ 0.5: {test_acc_default:.4f}
-- Accuracy @ tuned thr ({results['threshold']:.3f}): {test_acc_tuned:.4f}
-
-Dataset Information:
-- Training samples: {train_size}
-- Test samples: {len(X_test)}
-
-Confusion Matrix (Test @ 0.5):
-{confusion_matrix(y_test, test_pred_default)}
-
-Confusion Matrix (Test @ tuned thr):
-{confusion_matrix(y_test, test_pred_tuned)}
-
-Classes: {list(self.label_encoder.classes_)}
-
-Notes:
-- ✔ Pipeline (StandardScaler + Model) sans fuite de données
-- ✔ Probabilités calibrées (isotonic)
-- ✔ Seuil choisi pour FPR ≈ {self.fpr_target:.2%} sur validation
-- ✔ Sauvegarde du pipeline + seuil
-- ⚠️ Utilise la même version sklearn pour charger les modèles
-"""
-        with open(report_path, "w") as f:
-            f.write(content)
-
     def train_all_models(self):
         logger.info("Starting training...")
 
-        # 1) Charger et prétraiter
         df = self.load_datasets()
         if df is None:
             return {}
 
         X_all, y_all, feature_names = self.preprocess_data(df)
 
-        # 2) Split stratifié (60/20/20)
         X_temp, X_test, y_temp, y_test = train_test_split(
             X_all, y_all, test_size=0.2, random_state=42, stratify=y_all
         )
@@ -410,7 +329,6 @@ Notes:
             X_temp, y_temp, test_size=0.25, random_state=42, stratify=y_temp
         )
 
-        # 3) Balancer seulement le train
         if self.use_class_balancing:
             X_train_bal, y_train_bal = self.balance_dataset(X_train, y_train, method='smote')
         else:
@@ -418,7 +336,6 @@ Notes:
 
         logger.info(f"Split sizes: Train={len(X_train_bal)}, Val={len(X_val)}, Test={len(X_test)}")
 
-        # 4) Entraîner
         trained = {}
         best_model_name = None
         best_auc = -np.inf
@@ -432,7 +349,6 @@ Notes:
             pipe = res["pipeline"]
             thr = res["threshold"]
 
-            # 5) Évaluation finale sur test
             test_proba = pipe.predict_proba(X_test)[:, 1]
             test_pred_default = (test_proba >= 0.5).astype(int)
             test_pred_tuned = (test_proba >= thr).astype(int)
@@ -444,12 +360,10 @@ Notes:
             logger.info(f"{model_name} Test: AUC={test_auc:.3f} | Acc@0.5={test_acc_default:.3f} | "
                         f"Acc@thr({thr:.3f})={test_acc_tuned:.3f}")
 
-            # 6) Sauvegardes
             model_path = self.models_dir / f"{model_name}.pkl"
             joblib.dump(pipe, model_path)
             logger.info(f"Model (pipeline) saved: {model_path}")
 
-            # Export "preprocessors.pkl" pour compat avec ton predictor actuel
             try:
                 pre = pipe.named_steps['pre']
                 scaler = None
@@ -458,15 +372,14 @@ Notes:
                         scaler = trans
                         break
                 preprocessors = {
-                    'scaler': scaler,                    # fitted StandardScaler
-                    'label_encoder': self.label_encoder, # fitted LabelEncoder
-                    'feature_names': feature_names       # ordre attendu
+                    'scaler': scaler,
+                    'label_encoder': self.label_encoder,
+                    'feature_names': feature_names
                 }
                 joblib.dump(preprocessors, self.models_dir / "preprocessors.pkl")
             except Exception as e:
                 logger.warning(f"Could not export preprocessors.pkl: {e}")
 
-            # Seuils par modèle
             thresholds_registry[model_name] = {
                 "threshold": thr,
                 "picked_on": "validation",
@@ -474,12 +387,6 @@ Notes:
             }
             with open(self.models_dir / "thresholds.json", "w") as f:
                 json.dump(thresholds_registry, f, indent=2)
-
-            # Rapport
-            self.save_model_report(
-                model_name, res, test_acc_default, test_auc, test_acc_tuned,
-                X_test, y_test, test_pred_default, test_pred_tuned, len(X_train_bal)
-            )
 
             trained[model_name] = {
                 "path": str(model_path),
@@ -493,7 +400,6 @@ Notes:
                 best_model_name = model_name
                 joblib.dump(pipe, self.models_dir / "best_model.pkl")
 
-        # 7) Metadata
         meta = {
             "sklearn_version": sklearn.__version__,
             "trained_at": datetime.now().isoformat(),
