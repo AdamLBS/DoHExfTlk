@@ -15,8 +15,7 @@ def create_evasion_config():
         "name": "",
         "description": "",
         "exfiltration_config": {},
-        "test_files": [],
-        "notes": ""
+        "test_files": []
     }
     
     config["name"] = input("Configuration name: ").strip()
@@ -127,8 +126,6 @@ def list_configs():
             print(f"   {config.get('description', 'No description')}")
             print(f"   Chunks: {chunk_size}, Encoding: {encoding}, Timing: {timing}")
             print(f"   Detection: {detection}")
-            if config.get("notes"):
-                print(f"   Notes: {config['notes']}")
             print()
             
         except Exception as e:

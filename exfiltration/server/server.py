@@ -13,16 +13,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-class SimpleExfiltrationServer:
-    """Simple server to capture DoH exfiltration"""
-    
+class SimpleExfiltrationServer:    
     def __init__(self, output_dir="/app/captured", interface=None):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(exist_ok=True)
         os.chown(self.output_dir, 1000, 1000)
         self.interface = interface or os.environ.get('INTERFACE', 'eth0')
-        
-        # Reconstruction sessions
         self.sessions = {}
         self.session_lock = threading.Lock()
         
@@ -31,7 +27,6 @@ class SimpleExfiltrationServer:
         logger.info(f"Output directory: {self.output_dir}")
     
     def handle_dns_query(self, query_data):
-        """Process a captured DNS query"""
         try:
             domain = query_data.get('domain', '')
             query_name = query_data.get('query_name', '')
@@ -52,19 +47,14 @@ class SimpleExfiltrationServer:
             query_name = query_data.get('query_name', '')
             timestamp = query_data.get('timestamp', time.time())
             
-            # Analyze format: session_id-index-total-chunk.random.domain
             logger.debug(f"Analyzing query name: {query_name}")
             parts = query_name.split('.')
             if len(parts) >= 2:
-                data_segment = parts[0]  # First segment before the first dot
+                data_segment = parts[0] 
                 
-                # Parse format: session_id-index-total-chunk
                 import re
-                # Correct pattern for real format: timestamp-index-total-chunk
-                # The chunk can contain base64 characters (letters, numbers, +, /, =, -, _)
                 pattern = re.compile(r"(\d+)-(\d+)-(\d+)-(.+)")
                 
-                # Debug: show matching attempts
                 logger.debug(f"Parsing attempt: '{data_segment}'")
                 match = pattern.match(data_segment)
                 
@@ -85,23 +75,19 @@ class SimpleExfiltrationServer:
                                 'queries': []
                             }
                         
-                        # Store chunk with its index
                         self.sessions[session_id]['chunks'][index] = chunk
                         self.sessions[session_id]['queries'].append(query_data)
                     
                     logger.info(f"Data segment captured: {session_id}-{index:04d}-{total:04d}-{chunk[:20]}...")
                     
-                    # Check if we have all chunks
                     session = self.sessions[session_id]
                     if len(session['chunks']) >= session['total_chunks']:
                         logger.info(f"Complete reconstruction for session {session_id} ({session['total_chunks']} chunks)")
                         self._try_reconstruct_session(session_id)
                 else:
-                    # Detailed debug to understand why it doesn't work
                     logger.warning(f"Unrecognized chunk format 2: {data_segment}")
                     logger.debug(f"Pattern used: {pattern.pattern}")
                     
-                    # Debug attempt with simpler pattern
                     simple_pattern = re.compile(r"(\d+)-(\d+)-(\d+)-(.+)")
                     simple_match = simple_pattern.match(data_segment)
                     if simple_match:
@@ -109,7 +95,6 @@ class SimpleExfiltrationServer:
                     else:
                         logger.debug(f"Even simple pattern doesn't work")
                         
-                        # Display characters one by one for diagnosis
                         chars_debug = [f"{c}({ord(c)})" for c in data_segment[:50]]
                         logger.debug(f"Characters: {' '.join(chars_debug)}")
                 
@@ -119,17 +104,14 @@ class SimpleExfiltrationServer:
             traceback.print_exc()
     
     def _try_reconstruct_session(self, session_id):
-        """Attempt to reconstruct session data"""
         try:
             session = self.sessions[session_id]
             chunks = session['chunks']
             total_chunks = session['total_chunks']
             
-            # Check that all chunks are present
             if len(chunks) == total_chunks:
                 logger.info(f"Complete reconstruction for session {session_id} ({total_chunks} chunks)")
                 
-                # Order chunks by index
                 ordered_chunks = []
                 for i in range(total_chunks):
                     if i in chunks:
@@ -138,22 +120,18 @@ class SimpleExfiltrationServer:
                         logger.error(f"Missing chunk: {i}")
                         return
                 
-                # Reconstruct data
                 reconstructed_data = self._decode_chunks(ordered_chunks)
                 
                 if reconstructed_data:
-                    # Save reconstructed data
                     output_file = self.output_dir / f"exfiltrated_{session_id}_{int(time.time())}.bin"
                     with open(output_file, 'wb') as f:
                         f.write(reconstructed_data)
                     
-                    # Analyze file type and display appropriate preview
                     file_info = self._analyze_file_content(reconstructed_data)
                     
                     logger.info(f"Reconstructed data saved: {output_file}")
                     logger.info(f"Size: {len(reconstructed_data)} bytes")
                     logger.info(f"Detected type: {file_info['type']}")
-                    # rename file with appropriate extension
                     logger.info(f"Encoding: {file_info.get('encoding', 'unknown')}")
                     logger.info(f"Suggested extension: {file_info.get('extension', '.bin')}")
                     logger.info(f"File info: {file_info}")
@@ -173,16 +151,12 @@ class SimpleExfiltrationServer:
             traceback.print_exc()
     
     def _decode_chunks(self, ordered_chunks):
-        """Decode ordered chunks into original data"""
         import base64
         
-        # Concatenate all chunks in order
         combined_data = ''.join(ordered_chunks)
         logger.info(f"Combined data: {len(combined_data)} characters")
         
-        # Try URL-safe base64 decoding first (used by client)
         try:
-            # Add necessary padding for base64
             padding_needed = 4 - (len(combined_data) % 4)
             if padding_needed != 4:
                 combined_data += '=' * padding_needed
@@ -193,7 +167,6 @@ class SimpleExfiltrationServer:
         except Exception as e:
             logger.warning(f"URL-safe base64 failed: {e}")
         
-        # Try standard base64
         try:
             decoded = base64.b64decode(combined_data + '=' * (4 - len(combined_data) % 4))
             logger.info(f"Successful decoding with standard base64")
@@ -201,7 +174,6 @@ class SimpleExfiltrationServer:
         except Exception as e:
             logger.warning(f"Standard base64 failed: {e}")
         
-        # Try base32
         try:
             padding_needed = 8 - (len(combined_data) % 8)
             if padding_needed != 8:
@@ -212,7 +184,6 @@ class SimpleExfiltrationServer:
         except Exception as e:
             logger.warning(f"Base32 failed: {e}")
         
-        # Try hex
         try:
             decoded = bytes.fromhex(combined_data)
             logger.info(f"Successful decoding with hex")
@@ -220,7 +191,6 @@ class SimpleExfiltrationServer:
         except Exception as e:
             logger.warning(f"Hex failed: {e}")
         
-        # If no decoding works, treat as raw data
         logger.warning("No decoding succeeded, saving raw data")
         return combined_data.encode('utf-8', errors='ignore')
     
@@ -229,7 +199,6 @@ class SimpleExfiltrationServer:
         if not data:
             return {'type': 'empty', 'encoding': None}
         
-        # Check file signatures (magic numbers)
         signatures = {
             b'\x89PNG\r\n\x1a\n': {'type': 'PNG Image', 'ext': '.png'},
             b'\xff\xd8\xff': {'type': 'JPEG Image', 'ext': '.jpg'},
@@ -256,7 +225,6 @@ class SimpleExfiltrationServer:
             b'\xd0\xcf\x11\xe0': {'type': 'Microsoft Office', 'ext': '.doc/.xls'},
         }
         
-        # Check signatures
         for signature, info in signatures.items():
             if data.startswith(signature):
                 return {
@@ -269,20 +237,16 @@ class SimpleExfiltrationServer:
         return {'type': 'Binary Data', 'encoding': 'binary', 'extension': '.bin'}
     
     def start(self):
-        """Start capture server"""
         logger.info("Starting capture...")
         
         try:
-            # Create traffic interceptor
             interceptor = DoHTrafficInterceptor(
                 interface=self.interface,
                 output_dir=str(self.output_dir)
             )
             
-            # Configure callback to process queries
             interceptor.dns_callback = self.handle_dns_query
             
-            # Start capture
             interceptor.start_capture()
             
         except KeyboardInterrupt:
@@ -292,14 +256,10 @@ class SimpleExfiltrationServer:
             sys.exit(1)
 
 def main():
-    """Main entry point"""
-    
-    # Configuration from environment variables
     output_dir = os.environ.get('OUTPUT_DIR', '/app/captured')
     os.chown(output_dir, 1000, 1000)
     interface = os.environ.get('INTERFACE')
     
-    # Create and start server
     server = SimpleExfiltrationServer(
         output_dir=output_dir,
         interface=interface

@@ -196,3 +196,93 @@ else
 fi
 
 echo
+# =====================[ Pick best config (least detected) ]=====================
+info "Ranking configs by 'least detected'…"
+
+declare -A CFG_RATE CFG_MODEL
+
+shopt -s nullglob
+for cfgdir in "$RUN_ROOT"/*; do
+  [[ -d "$cfgdir" ]] || continue
+  cfg_name="$(basename "$cfgdir")"
+
+  # pick the latest predictor log produced for this config
+  logf="$(ls -1t "$cfgdir"/logs/predictor_*.log 2>/dev/null | head -n1 || true)"
+  [[ -f "$logf" ]] || { info "No predictor log for $cfg_name, skipping."; continue; }
+
+  # accumulate per-model counts from the log
+  declare -A M_BENIGN M_MALICIOUS M_TOTAL
+  current=""; benign=""; malicious=""
+
+  while IFS= read -r line; do
+    if [[ "$line" =~ 🤖[[:space:]]+([A-Za-z0-9_]+): ]]; then
+      current="$(echo "${BASH_REMATCH[1]}" | tr '[:upper:]' '[:lower:]')"
+      benign=""; malicious=""
+      continue
+    fi
+    if [[ "$line" =~ -[[:space:]]+Benign:[[:space:]]+([0-9]+) ]]; then
+      benign="${BASH_REMATCH[1]}"
+      continue
+    fi
+    if [[ "$line" =~ -[[:space:]]+Malicious:[[:space:]]+([0-9]+) ]]; then
+      malicious="${BASH_REMATCH[1]}"
+      if [[ -n "$current" && -n "$benign" && -n "$malicious" ]]; then
+        M_BENIGN["$current"]=$(( ${M_BENIGN["$current"]:-0} + benign ))
+        M_MALICIOUS["$current"]=$(( ${M_MALICIOUS["$current"]:-0} + malicious ))
+        M_TOTAL["$current"]=$(( ${M_TOTAL["$current"]:-0} + benign + malicious ))
+        benign=""; malicious=""
+      fi
+      continue
+    fi
+  done < "$logf"
+
+  # choose which model to judge the config by:
+  # prefer 'consensus' if present, else random_forest, else logistic_regression,
+  # else any model we have.
+  chosen=""
+  for cand in consensus random_forest logistic_regression gradient_boosting svm naive_bayes; do
+    if [[ -n "${M_TOTAL[$cand]:-}" ]]; then chosen="$cand"; break; fi
+  done
+  # fallback to first available model if none of the above matched
+  if [[ -z "$chosen" ]]; then
+    for k in "${!M_TOTAL[@]}"; do chosen="$k"; break; done
+  fi
+
+  if [[ -z "$chosen" || -z "${M_TOTAL[$chosen]:-}" || "${M_TOTAL[$chosen]}" -eq 0 ]]; then
+    info "No usable stats for $cfg_name, skipping."
+    continue
+  fi
+
+  # detection rate for this config using the chosen model
+  rate="$(awk -v m="${M_MALICIOUS[$chosen]}" -v t="${M_TOTAL[$chosen]}" 'BEGIN{ printf("%.6f", (m+0.0)/t) }')"
+  CFG_RATE["$cfg_name"]="$rate"
+  CFG_MODEL["$cfg_name"]="$chosen"
+done
+shopt -u nullglob
+
+# print ranking
+printf "\n%-28s %-18s %-16s\n" "Config" "Model used" "Detection rate"
+printf "%-28s %-18s %-16s\n" "----------------------------" "------------------" "----------------"
+for cfg in "${!CFG_RATE[@]}"; do
+  printf "%-28s %-18s %-16s\n" "$cfg" "${CFG_MODEL[$cfg]}" "$(awk -v r="${CFG_RATE[$cfg]}" 'BEGIN{ printf("%.2f%%", r*100) }')"
+done | sort -k3,3V
+
+# find the winner (min rate)
+best_cfg=""
+best_rate=""
+for cfg in "${!CFG_RATE[@]}"; do
+  if [[ -z "$best_cfg" ]]; then
+    best_cfg="$cfg"; best_rate="${CFG_RATE[$cfg]}"
+  else
+    if awk -v a="${CFG_RATE[$cfg]}" -v b="$best_rate" 'BEGIN{exit !(a<b)}'; then
+      best_cfg="$cfg"; best_rate="${CFG_RATE[$cfg]}"
+    fi
+  fi
+done
+
+if [[ -n "$best_cfg" ]]; then
+  printf "\n🏆 Best (least detected) config: %s  —  rate: %s  —  model: %s\n" \
+    "$best_cfg" "$(awk -v r="$best_rate" 'BEGIN{ printf("%.2f%%", r*100) }')" "${CFG_MODEL[$best_cfg]}"
+else
+  echo "No configs could be ranked."
+fi

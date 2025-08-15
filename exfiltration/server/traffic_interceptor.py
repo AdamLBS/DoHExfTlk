@@ -12,16 +12,13 @@ from scapy.layers.http import HTTPRequest, HTTPResponse
 import threading
 import queue
 
-# Logging configuration
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-class DoHTrafficInterceptor:
-    """DoH traffic interceptor to detect exfiltration"""
-    
+class DoHTrafficInterceptor:    
     def __init__(self, interface=None, output_dir="/app/captured", 
                  capture_filter="port 53 or port 443 or port 8080",
                  doh_domains=None):
@@ -46,19 +43,15 @@ class DoHTrafficInterceptor:
         logger.info(f"Output directory: {self.output_dir}")
     
     def packet_handler(self, packet):
-        """Handler for captured packets"""
         try:
             self.stats['total_packets'] += 1
             
-            # Analyze classic DNS packets
             if packet.haslayer(DNS):
                 self._handle_dns_packet(packet)
             
-            # Analyze HTTP/HTTPS packets (DoH)
             elif packet.haslayer(TCP):
                 self._handle_tcp_packet(packet)
             
-            # Periodic statistics logging
             if self.stats['total_packets'] % 1000 == 0:
                 self._log_stats()
                 
@@ -66,18 +59,15 @@ class DoHTrafficInterceptor:
             logger.error(f"Error processing packet: {e}")
     
     def _handle_dns_packet(self, packet):
-        """Process classic DNS packets"""
         if packet.haslayer(DNSQR):
             self.stats['dns_packets'] += 1
             
-            # Extract DNS information
             dns_query = packet[DNSQR]
             domain = dns_query.qname.decode('utf-8').rstrip('.')
             source_ip = packet[IP].src if packet.haslayer(IP) else "unknown"
             
             logger.debug(f"DNS Query: {domain} from {source_ip}")
             
-            # Create query data
             query_data = {
                 'query_name': domain,
                 'src_ip': source_ip,
@@ -85,42 +75,34 @@ class DoHTrafficInterceptor:
                 'domain': domain
             }
             
-            # Call callback if defined
             if self.dns_callback:
                 self.dns_callback(query_data)
     
     def _handle_tcp_packet(self, packet):
-        """Process TCP packets (potentially DoH)"""
         if not packet.haslayer(IP):
             return
             
-        # Check if it's traffic to monitored DoH domains
         dest_port = packet[TCP].dport if packet.haslayer(TCP) else 0
         
-        # Typical ports for DoH: 443 (HTTPS), 8080 (test)
         if dest_port in [443, 8080]:
             self.stats['http_packets'] += 1
             
-            # Try to extract HTTP data if possible
             try:
                 if packet.haslayer(HTTPRequest):
                     self._analyze_http_request(packet)
             except:
-                pass  # No readable HTTP data
+                pass
     
     def _analyze_http_request(self, packet):
-        """Analyze HTTP requests to detect DoH"""
         try:
             http_req = packet[HTTPRequest]
             host = http_req.Host.decode('utf-8') if http_req.Host else ""
             path = http_req.Path.decode('utf-8') if http_req.Path else ""
             
-            # Check if it's a DoH request
             doh_domains = ["doh.local", "exfill.local"]
             if '/dns-query' in path and any(domain in host for domain in doh_domains):
                 source_ip = packet[IP].src
                 
-                # Extract request parameters
                 if '?' in path:
                     query_params = path.split('?')[1]
                     params = dict(param.split('=') for param in query_params.split('&') if '=' in param)
@@ -129,7 +111,6 @@ class DoHTrafficInterceptor:
                     if domain:
                         logger.debug(f"DoH Query: {domain} from {source_ip}")
                         
-                        # Create query data
                         query_data = {
                             'query_name': domain,
                             'src_ip': source_ip,
@@ -137,7 +118,6 @@ class DoHTrafficInterceptor:
                             'domain': domain
                         }
                         
-                        # Call callback if defined
                         if self.dns_callback:
                             self.dns_callback(query_data)
                             
@@ -145,7 +125,6 @@ class DoHTrafficInterceptor:
             logger.debug(f"Error analyzing HTTP request: {e}")
     
     def _log_stats(self):
-        """Log statistics periodically"""
         uptime = time.time() - self.stats['start_time']
         logger.info(f"Stats - Packets: {self.stats['total_packets']}, "
                    f"DNS: {self.stats['dns_packets']}, "
@@ -154,14 +133,12 @@ class DoHTrafficInterceptor:
                    f"Uptime: {uptime:.1f}s")
     
     def start_capture(self):
-        """Start packet capture"""
         logger.info(f"Starting packet capture on {self.interface}")
         logger.info(f"Filter: {self.capture_filter}")
         
         self.running = True
         
         try:
-            # Start capture with Scapy
             sniff(
                 iface=self.interface,
                 filter=self.capture_filter,
@@ -176,16 +153,13 @@ class DoHTrafficInterceptor:
             raise
     
     def stop_capture(self):
-        """Stop capture"""
         logger.info("Stopping packet capture...")
         self.running = False
         
-        # Display final statistics
         self.print_final_stats()
         self.exfil_server.print_statistics()
     
     def print_final_stats(self):
-        """Display final statistics"""
         uptime = time.time() - self.stats['start_time']
         
         logger.info(f"\nFINAL STATISTICS:")
@@ -197,8 +171,6 @@ class DoHTrafficInterceptor:
         logger.info(f"   Detection rate: {(self.stats['exfiltration_detected']/max(self.stats['dns_packets'], 1)*100):.2f}%")
 
 class NetworkMonitor:
-    """Simplified main network monitor"""
-    
     def __init__(self, interface: str = 'eth0', output_dir: str = '/app/captured', 
                  capture_filter: str = 'port 53 or port 443 or port 8080',
                  doh_domains: list = None):
@@ -213,7 +185,6 @@ class NetworkMonitor:
         self.shutdown_event = threading.Event()
     
     def _load_config_from_env(self):
-        """Load configuration from environment variables"""
         self.interface = os.getenv('INTERFACE', self.interface)
         self.output_dir = os.getenv('OUTPUT_DIR', self.output_dir)
         self.capture_filter = os.getenv('CAPTURE_FILTER', self.capture_filter)
@@ -221,26 +192,21 @@ class NetworkMonitor:
         self.doh_domains = domains_str.split(',') if domains_str else self.doh_domains
     
     def signal_handler(self, signum, frame):
-        """Signal handler"""
         logger.info(f"Received signal {signum}, shutting down...")
         self.shutdown()
     
     def shutdown(self):
-        """Clean shutdown"""
         self.shutdown_event.set()
         if self.interceptor:
             self.interceptor.stop_capture()
     
     def run(self):
-        """Launch the monitor"""
-        # Configure signal handlers
         signal.signal(signal.SIGINT, self.signal_handler)
         signal.signal(signal.SIGTERM, self.signal_handler)
         
         try:
             logger.info("DoH Traffic Monitor starting...")
             
-            # Create interceptor with parameters
             self.interceptor = DoHTrafficInterceptor(
                 interface=self.interface,
                 output_dir=self.output_dir,
@@ -248,12 +214,10 @@ class NetworkMonitor:
                 doh_domains=self.doh_domains
             )
             
-            # Start capture in separate thread
             capture_thread = threading.Thread(target=self.interceptor.start_capture)
             capture_thread.daemon = True
             capture_thread.start()
             
-            # Wait for shutdown signal
             self.shutdown_event.wait()
             
         except Exception as e:
@@ -263,14 +227,12 @@ class NetworkMonitor:
             self.shutdown()
 
 def check_permissions():
-    """Check necessary permissions"""
     if os.geteuid() != 0:
         logger.warning("Not running as root. May need CAP_NET_RAW capability for packet capture.")
         return False
     return True
 
 def main():
-    """Main entry point"""
     import argparse
     
     parser = argparse.ArgumentParser(description="DoH Traffic Interceptor")
@@ -292,12 +254,10 @@ def main():
         print(f"Permissions check: {'OK' if has_perms else 'FAILED'}")
         sys.exit(0 if has_perms else 1)
     
-    # Check permissions
     if not check_permissions():
         logger.error("Insufficient permissions for packet capture")
         sys.exit(1)
     
-    # Monitor configuration
     doh_domains = args.domains.split(',') if args.domains else ['doh.local', 'exfill.local']
     capture_filter = args.filter if args.filter else 'port 53 or port 443 or port 8080'
     
@@ -308,10 +268,8 @@ def main():
         doh_domains=doh_domains
     )
     
-    # Load environment variables
     monitor._load_config_from_env()
     
-    # Launch monitor
     try:
         monitor.run()
     except KeyboardInterrupt:

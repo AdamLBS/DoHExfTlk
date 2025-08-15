@@ -1,6 +1,4 @@
 FROM python:3.11-slim
-
-# Installer les dépendances système pour la capture de paquets
 RUN apt-get update && apt-get install -y \
     libpcap-dev \
     tcpdump \
@@ -12,35 +10,20 @@ RUN apt-get update && apt-get install -y \
     iproute2 \
     docker.io \
     && rm -rf /var/lib/apt/lists/*
-
-# Créer le répertoire de travail
 WORKDIR /app
-
-# Copier les fichiers Python et scripts
 COPY requirements.txt .
 COPY server.py .
 COPY traffic_interceptor.py .
 COPY start_server.sh .
 
-# Rendre le script exécutable
 RUN chmod +x start_server.sh
 
-# Installer les dépendances Python
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Créer le répertoire de capture
 RUN mkdir -p /app/captured
 
-# Variables d'environnement par défaut
 ENV OUTPUT_DIR=/app/captured
 ENV TARGET_CONTAINER=resolver
-
-# Donner les capabilities nécessaires pour la capture de paquets
-# Note: Ceci sera fait au niveau docker-compose avec --cap-add=NET_RAW
-
-# Commande par défaut - utilise le script de détection dynamique
 CMD ["./start_server.sh"]
-
-# Healthcheck basé sur les fichiers de sortie
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD test -d /app/captured || exit 1

