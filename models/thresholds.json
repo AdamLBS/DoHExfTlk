@@ -1,11 +1,16 @@
 {
   "random_forest": {
-    "threshold": 0.20876564170282333,
+    "threshold": 0.024397413286302173,
+    "picked_on": "validation",
+    "target_fpr": 0.01
+  },
+  "gradient_boosting": {
+    "threshold": 0.0009466549845413254,
     "picked_on": "validation",
     "target_fpr": 0.01
   },
   "logistic_regression": {
-    "threshold": 0.9565404965404966,
+    "threshold": 0.9607659331863353,
     "picked_on": "validation",
     "target_fpr": 0.01
   }
