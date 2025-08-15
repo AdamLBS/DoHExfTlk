@@ -1,0 +1,48 @@
+/usr/local/lib/python3.11/site-packages/sklearn/base.py:376: InconsistentVersionWarning: Trying to unpickle estimator StandardScaler from version 1.6.1 when using version 1.4.0. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+/usr/local/lib/python3.11/site-packages/sklearn/base.py:376: InconsistentVersionWarning: Trying to unpickle estimator LabelEncoder from version 1.6.1 when using version 1.4.0. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+2025-08-14 11:07:58,140 - INFO - ✅ Préprocesseurs chargés
+2025-08-14 11:07:58,292 - INFO - ✅ Modèle chargé: gradient_boosting
+/usr/local/lib/python3.11/site-packages/sklearn/base.py:376: InconsistentVersionWarning: Trying to unpickle estimator LogisticRegression from version 1.6.1 when using version 1.4.0. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+2025-08-14 11:07:58,293 - INFO - ✅ Modèle chargé: logistic_regression
+2025-08-14 11:07:58,339 - INFO - ✅ Modèle chargé: random_forest
+2025-08-14 11:07:58,339 - INFO - 📊 3 modèles chargés: ['gradient_boosting', 'logistic_regression', 'random_forest']
+2025-08-14 11:07:58,339 - INFO - 📊 Chargement données: /app/captured/output.only_172.18.0.5.csv
+2025-08-14 11:07:58,342 - INFO - 📊 Features utilisées: 31/31
+/usr/local/lib/python3.11/site-packages/sklearn/base.py:493: UserWarning: X does not have valid feature names, but GradientBoostingClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.11/site-packages/sklearn/base.py:493: UserWarning: X does not have valid feature names, but GradientBoostingClassifier was fitted with feature names
+  warnings.warn(
+2025-08-14 11:07:58,363 - INFO - 📊 Features utilisées: 31/31
+/usr/local/lib/python3.11/site-packages/sklearn/base.py:493: UserWarning: X does not have valid feature names, but LogisticRegression was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.11/site-packages/sklearn/base.py:493: UserWarning: X does not have valid feature names, but LogisticRegression was fitted with feature names
+  warnings.warn(
+2025-08-14 11:07:58,381 - INFO - 📊 Features utilisées: 31/31
+/usr/local/lib/python3.11/site-packages/sklearn/base.py:493: UserWarning: X does not have valid feature names, but RandomForestClassifier was fitted with feature names
+  warnings.warn(
+/usr/local/lib/python3.11/site-packages/sklearn/base.py:493: UserWarning: X does not have valid feature names, but RandomForestClassifier was fitted with feature names
+  warnings.warn(
+2025-08-14 11:07:58,409 - INFO - 📊 === RÉSUMÉ DES PRÉDICTIONS ===
+2025-08-14 11:07:58,409 - INFO - 🤖 GRADIENT_BOOSTING:
+2025-08-14 11:07:58,409 - INFO -    - Benign: 1
+2025-08-14 11:07:58,409 - INFO -    - Malicious: 0
+2025-08-14 11:07:58,409 - INFO -    - Confiance moyenne: 0.996
+2025-08-14 11:07:58,409 - INFO - 🤖 LOGISTIC_REGRESSION:
+2025-08-14 11:07:58,409 - INFO -    - Benign: 1
+2025-08-14 11:07:58,409 - INFO -    - Malicious: 0
+2025-08-14 11:07:58,409 - INFO -    - Confiance moyenne: 1.000
+2025-08-14 11:07:58,410 - INFO - 🤖 RANDOM_FOREST:
+2025-08-14 11:07:58,410 - INFO -    - Benign: 0
+2025-08-14 11:07:58,410 - INFO -    - Malicious: 1
+2025-08-14 11:07:58,410 - INFO -    - Confiance moyenne: 0.579
+2025-08-14 11:07:58,410 - INFO - 🤖 CONSENSUS:
+2025-08-14 11:07:58,410 - INFO -    - Benign: 1
+2025-08-14 11:07:58,410 - INFO -    - Malicious: 0
+2025-08-14 11:07:58,410 - INFO -    - Confiance moyenne: 0.858
+2025-08-14 11:07:58,413 - INFO - 💾 Results written to: output/results_20250814_110758.json

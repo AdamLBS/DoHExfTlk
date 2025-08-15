@@ -1,0 +1,20 @@
+2025-08-14 16:43:33,274 - INFO - ✅ Modèle chargé: gradient_boosting
+/usr/local/lib/python3.11/site-packages/sklearn/base.py:376: InconsistentVersionWarning: Trying to unpickle estimator StandardScaler from version 1.6.1 when using version 1.4.0. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+2025-08-14 16:43:33,276 - ERROR - ❌ Erreur chargement ../models/logistic_regression.pkl: Can't get attribute '_RemainderColsList' on <module 'sklearn.compose._column_transformer' from '/usr/local/lib/python3.11/site-packages/sklearn/compose/_column_transformer.py'>
+2025-08-14 16:43:33,276 - ERROR - ❌ Erreur chargement ../models/random_forest.pkl: Can't get attribute '_RemainderColsList' on <module 'sklearn.compose._column_transformer' from '/usr/local/lib/python3.11/site-packages/sklearn/compose/_column_transformer.py'>
+2025-08-14 16:43:33,276 - INFO - 📊 Chargement données: /app/captured/output.only_172.18.0.5.csv
+2025-08-14 16:43:33,290 - INFO - 📊 Features utilisées: 31/31
+2025-08-14 16:43:33,291 - INFO - 📊 === PRÉDICTIONS ===
+2025-08-14 16:43:33,293 - INFO - 🤖 GRADIENT_BOOSTING:
+2025-08-14 16:43:33,293 - INFO -    - Benign: 0
+2025-08-14 16:43:33,293 - INFO -    - Malicious: 84
+2025-08-14 16:43:33,293 - INFO -    - Seuil appliqué: 0.500
+2025-08-14 16:43:33,293 - INFO -    - Confiance moyenne: 1.000
+2025-08-14 16:43:33,294 - INFO - 
+📊 === RÉSUMÉ DES PRÉDICTIONS ===
+
+Modèle                     Benign    Malicious      Total    Seuil    Confiance
+-------------------------------------------------------------------------------
+gradient_boosting               0           84         84    0.500        1.000

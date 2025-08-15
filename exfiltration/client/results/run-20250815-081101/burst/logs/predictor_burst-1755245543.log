@@ -1,0 +1,30 @@
+2025-08-15 08:13:13,013 - ERROR - Error loading ../models/gradient_boosting.pkl: Can't get attribute '__pyx_unpickle_CyHalfBinomialLoss' on <module 'sklearn._loss._loss' from '/usr/local/lib/python3.11/site-packages/sklearn/_loss/_loss.cpython-311-x86_64-linux-gnu.so'>
+2025-08-15 08:13:13,020 - INFO - Loaded model: logistic_regression
+2025-08-15 08:13:13,140 - INFO - Loaded model: random_forest
+2025-08-15 08:13:13,141 - INFO - Loaded DoHXP rule-based model from ../models/dohxp_model.json
+2025-08-15 08:13:13,141 - INFO - Loading data: /app/captured/output.only_172.18.0.5.csv
+2025-08-15 08:13:13,156 - INFO - Features used: 31/31
+2025-08-15 08:13:13,156 - INFO - === PREDICTIONS ===
+2025-08-15 08:13:13,164 - INFO - 🤖 LOGISTIC_REGRESSION:
+2025-08-15 08:13:13,164 - INFO -    - Benign: 1
+2025-08-15 08:13:13,164 - INFO -    - Malicious: 0
+2025-08-15 08:13:13,165 - INFO -    - Threshold applied: 0.957
+2025-08-15 08:13:13,165 - INFO -    - Avg confidence: 0.987
+2025-08-15 08:13:13,195 - INFO - 🤖 RANDOM_FOREST:
+2025-08-15 08:13:13,195 - INFO -    - Benign: 0
+2025-08-15 08:13:13,195 - INFO -    - Malicious: 1
+2025-08-15 08:13:13,195 - INFO -    - Threshold applied: 0.209
+2025-08-15 08:13:13,195 - INFO -    - Avg confidence: 0.791
+2025-08-15 08:13:13,196 - INFO - 🤖 DOHXP:
+2025-08-15 08:13:13,196 - INFO -    - Benign: 0
+2025-08-15 08:13:13,196 - INFO -    - Malicious: 1
+2025-08-15 08:13:13,196 - INFO -    - Threshold applied: 0.500
+2025-08-15 08:13:13,196 - INFO -    - Avg confidence: 1.000
+2025-08-15 08:13:13,196 - INFO - 
+=== SUMMARY OF PREDICTIONS ===
+
+Model                      Benign    Malicious      Total Threshold   Confidence
+--------------------------------------------------------------------------------
+logistic_regression             1            0          1    0.957        0.987
+random_forest                   0            1          1    0.209        0.791
+dohxp                           0            1          1    0.500        1.000

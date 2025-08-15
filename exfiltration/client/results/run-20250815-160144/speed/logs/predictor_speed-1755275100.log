@@ -1,0 +1,36 @@
+2025-08-15 16:25:37,652 - INFO - Loaded model: gradient_boosting
+2025-08-15 16:25:37,655 - INFO - Loaded model: logistic_regression
+2025-08-15 16:25:37,785 - INFO - Loaded model: random_forest
+2025-08-15 16:25:37,785 - INFO - Loaded DoHXP rule-based model from ../models/dohxp_model.json
+2025-08-15 16:25:37,785 - INFO - Loading data: /app/captured/output.only_172.18.0.5.csv
+2025-08-15 16:25:37,798 - INFO - Features used: 31/31
+2025-08-15 16:25:37,798 - INFO - === PREDICTIONS ===
+2025-08-15 16:25:37,807 - INFO - 🤖 GRADIENT_BOOSTING:
+2025-08-15 16:25:37,807 - INFO -    - Benign: 0
+2025-08-15 16:25:37,807 - INFO -    - Malicious: 1
+2025-08-15 16:25:37,807 - INFO -    - Threshold applied: 0.001
+2025-08-15 16:25:37,807 - INFO -    - Avg confidence: 0.967
+2025-08-15 16:25:37,813 - INFO - 🤖 LOGISTIC_REGRESSION:
+2025-08-15 16:25:37,814 - INFO -    - Benign: 1
+2025-08-15 16:25:37,814 - INFO -    - Malicious: 0
+2025-08-15 16:25:37,814 - INFO -    - Threshold applied: 0.961
+2025-08-15 16:25:37,814 - INFO -    - Avg confidence: 0.999
+2025-08-15 16:25:37,845 - INFO - 🤖 RANDOM_FOREST:
+2025-08-15 16:25:37,845 - INFO -    - Benign: 0
+2025-08-15 16:25:37,845 - INFO -    - Malicious: 1
+2025-08-15 16:25:37,845 - INFO -    - Threshold applied: 0.024
+2025-08-15 16:25:37,845 - INFO -    - Avg confidence: 0.852
+2025-08-15 16:25:37,845 - INFO - 🤖 DOHXP:
+2025-08-15 16:25:37,845 - INFO -    - Benign: 0
+2025-08-15 16:25:37,845 - INFO -    - Malicious: 1
+2025-08-15 16:25:37,845 - INFO -    - Threshold applied: 0.500
+2025-08-15 16:25:37,845 - INFO -    - Avg confidence: 1.000
+2025-08-15 16:25:37,845 - INFO - 
+=== SUMMARY OF PREDICTIONS ===
+
+Model                      Benign    Malicious      Total Threshold   Confidence
+--------------------------------------------------------------------------------
+gradient_boosting               0            1          1    0.001        0.967
+logistic_regression             1            0          1    0.961        0.999
+random_forest                   0            1          1    0.024        0.852
+dohxp                           0            1          1    0.500        1.000
