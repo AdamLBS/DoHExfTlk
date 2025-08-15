@@ -59,32 +59,56 @@ It combines:
 ## System Architecture
 
 ```mermaid
-flowchart LR
-    subgraph ClientTests[Client Tests]
-        EC[Exfil Clients]
-        TS[Test Scripts]
-        CT[Config Tools]
+flowchart TB
+    subgraph External[External Network]
+        Client[DoH Client<br/>Exfiltration Tool]
     end
 
-    subgraph DoHInfra[DoH Infrastructure]
-        DS[DoH Server]
-        DR[DNS Resolver]
-        TP[TLS Proxy]
+    subgraph Infrastructure[DoH Infrastructure]
+        Traefik[Traefik<br/>TLS Proxy<br/>:443]
+        DoHServer[DoH Server<br/>dns-over-https<br/>:8053]
+        Resolver[DNS Resolver<br/>Unbound<br/>:53]
     end
 
-    subgraph DetectionLayer[Detection Layer]
-        TA[Traffic Analyzer]
-        ML[ML Models]
-        PD[Pattern Detection]
+    subgraph Monitoring[Traffic Monitoring]
+        TrafficAnalyzer[Traffic Analyzer<br/>captures DoH traffic]
+        ExfilInterceptor[Exfil Interceptor<br/>captures DNS queries]
     end
 
-    subgraph DataAnalysis[Data Analysis]
-        DL[DoHLyzer]
-        MT[ML Trainer]
-        CL[Classifiers]
+    subgraph Analysis[Detection & Analysis]
+        DoHLyzer[DoHLyzer<br/>Flow Analysis]
+        MLAnalyzer[ML Analyzer<br/>Classification]
+        PatternDetection[Pattern Detection<br/>Behavioral Analysis]
     end
 
-    ClientTests --> DoHInfra --> DetectionLayer --> DataAnalysis
+    %% Main communication flow
+    Client -.->|HTTPS DoH Queries| Traefik
+    Traefik -->|Forward| DoHServer
+    DoHServer -->|DNS Query| Resolver
+    Resolver -.->|DNS Response| DoHServer
+    DoHServer -.->|DoH Response| Traefik
+    Traefik -.->|HTTPS Response| Client
+
+    %% Monitoring connections
+    TrafficAnalyzer -.->|Captures| Traefik
+    ExfilInterceptor -.->|Captures| Resolver
+
+    %% Analysis flow
+    TrafficAnalyzer --> DoHLyzer
+    ExfilInterceptor --> PatternDetection
+    DoHLyzer --> MLAnalyzer
+    PatternDetection --> MLAnalyzer
+
+    %% Styling
+    classDef client fill:#e1f5fe
+    classDef infra fill:#f3e5f5
+    classDef monitor fill:#fff3e0
+    classDef analysis fill:#e8f5e8
+
+    class Client client
+    class Traefik,DoHServer,Resolver infra
+    class TrafficAnalyzer,ExfilInterceptor monitor
+    class DoHLyzer,MLAnalyzer,PatternDetection analysis
 ```
 
 ---
