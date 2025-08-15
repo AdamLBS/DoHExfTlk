@@ -3,7 +3,7 @@
 end_time=$((SECONDS + 60))
 
 while [ $SECONDS -lt $end_time ]; do
-  echo "🌀 $(date '+%T') - Nouvelle itération"
+  echo "🌀 $(date '+%T') - New iteration"
 
   curl -k --insecure \
        -H "Accept: application/dns-json" \
