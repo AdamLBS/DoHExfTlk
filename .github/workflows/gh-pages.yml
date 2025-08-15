@@ -1,0 +1,35 @@
+site_name: DoHExpTlk - DNS over HTTPS Exfiltration Toolkit
+site_url: https://dohexptlk.admlbs.fr
+repo_url: https://github.com/AdamLBS/DohExfTlk
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - navigation.expand
+    - navigation.sections
+    - navigation.tracking
+    - toc.follow
+
+nav:
+  - Accueil: index.md           
+  - Architecture: architecture.md
+  - Configuration: configuration.md
+  - Examples: examples.md
+  - Exfiltration: exfiltration.md
+  - FAQ: faq.md
+
+docs_dir: docs
+
+plugins:
+  - search
+  - mermaid2
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - pymdownx.superfences 
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.tabbed:
+      alternate_style: true
