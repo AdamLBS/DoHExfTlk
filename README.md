@@ -155,8 +155,8 @@ docker compose up -d
 # Check running services
 docker compose ps
 
-# Run exfiltration test
-docker exec -it client_test bash /scripts/test_exfiltration.sh
+# Test DoH server
+docker exec -it client_test bash /scripts/test_doh.sh
 ```
 
 ### Launch a full exfiltration scenario
