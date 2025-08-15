@@ -7,7 +7,7 @@ on:
       - 'README.md'
       - 'docs/**'
       - 'mkdocs.yml'
-      - '.github/workflows/gh-pages.yml'
+      - '.github/workflows/doc.yml'
   workflow_dispatch:
 
 permissions:
