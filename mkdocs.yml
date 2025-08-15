@@ -1,5 +1,5 @@
-site_name: DoHExpTlk - DNS over HTTPS Exfiltration Toolkit
-site_url: https://dohexptlk.admlbs.fr
+site_name: DoHExfTlk - DNS over HTTPS Exfiltration Toolkit
+site_url: https://dohexftlk.admlbs.fr
 repo_url: https://github.com/AdamLBS/DohExfTlk
 theme:
   name: material
