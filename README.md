@@ -59,7 +59,7 @@ It combines:
 
 ```mermaid
 flowchart TB
-    subgraph External[External Network]
+    subgraph Internal[Internal Docker Network]
         Client[DoH Client<br/>Exfiltration Tool]
     end
 
