@@ -160,6 +160,22 @@ docker exec -it client_test bash /scripts/test_doh.sh
 docker exec -it client_test bash /scripts/test_exfiltration.sh
 ```
 
+### Launch a full exfiltration scenario
+```bash
+# Train model
+cd ml_analyzer
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python model_trainer.py
+# Wait for training to be finished
+
+# Launch the pipeline
+
+cd DoHExfTlk/exfiltration/client
+bash run_pipeline.sh
+
+```
 ---
 
 ## Main Components
