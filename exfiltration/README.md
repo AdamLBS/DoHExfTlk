@@ -160,89 +160,7 @@ for domain in captured_domains:
     print(f"Exfiltration confidence: {confidence:.3f}")
 ```
 
-## 📈 Performance Metrics
-
-### Benchmarking Results
-
-- **Throughput**: 500-2000 bytes/sec (depending on configuration)
-- **Detection rates**: 95%+ for obvious patterns, <10% for advanced evasion
-- **Reconstruction accuracy**: 99.9% for complete sessions
-- **Latency**: <1ms processing per DNS query
-
-### Configuration Impact
-
-| Scenario | Chunk Size | Encoding | Detection Rate | Throughput |
-|----------|------------|----------|----------------|------------|
-| Classic | 30 bytes | Base64 | 95% | 1500 B/s |
-| Stealth | 18 bytes | Custom | 8% | 400 B/s |
-| Burst | 45 bytes | Hex | 88% | 2000 B/s |
-| Minimal | 8 bytes | Custom | 3% | 200 B/s |
-
-## 🔬 Research Extensions
-
-### Custom Scenario Development
-
-```python
-from config_manager import DoHConfigManager
-from client import ExfiltrationConfig, EncodingType, TimingPattern
-
-# Create custom research scenario
-manager = DoHConfigManager()
-
-custom_config = ExfiltrationConfig(
-    chunk_size=22,
-    encoding=EncodingType.BASE32,
-    timing_pattern=TimingPattern.RANDOM,
-    base_delay=1.5,
-    compression=True,
-    encryption=True,
-    encryption_key="research_key",
-    subdomain_randomization=True
-)
-
-manager.create_custom_scenario(
-    name="custom_research",
-    description="Custom scenario for specific research question",
-    config=custom_config,
-    test_data="research_dataset.json",
-    expected_detection=False,
-    notes="Testing hypothesis about timing randomization effectiveness"
-)
-```
-
-### Dataset Generation
-
-```python
-# Generate large datasets for ML training
-for scenario_name in manager.list_scenarios():
-    scenario = manager.get_scenario(scenario_name)
-    
-    # Generate 1000 samples per scenario
-    for i in range(1000):
-        client = DoHExfiltrationClient(scenario.exfiltration_config)
-        domains = simulate_exfiltration(client, f"sample_{i}.dat")
-        
-        # Label data for supervised learning
-        label = 1 if scenario.expected_detection else 0
-        save_training_sample(domains, label, scenario_name)
-```
-
 ## 🔧 Technical Architecture
-
-### Client Architecture
-
-```
-DoHExfiltrationClient
-├── Configuration Management (ExfiltrationConfig)
-├── Data Preparation Pipeline
-│   ├── Compression (gzip)
-│   ├── Encryption (XOR/AES)
-│   └── Encoding (Base64/Hex/Base32/Custom)
-├── Chunking Engine
-├── Timing Control System
-├── Domain Generation
-└── DoH Request Engine
-```
 
 ### Server Architecture
 
@@ -257,15 +175,6 @@ DoHExfiltrationServer
 │   ├── Decompression
 │   └── File Type Detection
 ```
-
-## 📚 Academic References
-
-This system implements techniques from:
-
-- **DNS Tunneling Research** (Dusi et al., 2008)
-- **DoH Exfiltration Studies** (Vekshin et al., 2021)  
-- **ML-based DNS Analysis** (CIRA-CIC-DoHBrw-2020 dataset)
-- **Advanced Persistent Threat Techniques** (MITRE ATT&CK T1048.003)
 
 ## ⚠️ Ethical Use Notice
 
