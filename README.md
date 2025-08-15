@@ -277,6 +277,21 @@ python config_generator.py --list
 ```
 
 ---
+## Video examples
+
+**File exfiltration example**
+In this example, we are exfiltrating a txt file via the exfiltration client, and showing that it has been captured by the exfil_interceptor server.
+
+![![Exfiltration Example]](https://uploads.admlbs.fr/dohexftlk/fileexfil.mp4)
+
+**Pipeline Test Example**
+
+In this example, we are testing the entire exfiltration pipeline, from the client to the server, that tests multiple configurations and use the predictor to see if the flows have been marked as malicious.
+It then shows an overall ranking of all the configurations
+
+![![Pipeline Test Example]](https://uploads.admlbs.fr/dohexftlk/pipeline.mp4)
+
+---
 
 ## Roadmap
 
