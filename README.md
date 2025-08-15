@@ -282,14 +282,14 @@ python config_generator.py --list
 **File exfiltration example**
 In this example, we are exfiltrating a txt file via the exfiltration client, and showing that it has been captured by the exfil_interceptor server.
 
-![type:video](https://uploads.admlbs.fr/dohexftlk/fileexfil.mp4)
+![type:video](https://github.com/AdamLBS/DohExfTlk/raw/refs/heads/main/docs/assets/videos/fileexfil.mp4)
 
 **Pipeline Test Example**
 
 In this example, we are testing the entire exfiltration pipeline, from the client to the server, that tests multiple configurations and use the predictor to see if the flows have been marked as malicious.
 It then shows an overall ranking of all the configurations
 
-![type:video](https://uploads.admlbs.fr/dohexftlk/pipeline.mp4)
+![type:video](https://github.com/AdamLBS/DohExfTlk/raw/refs/heads/main/docs/assets/videos/pipeline.mp4)
 
 ---
 
@@ -308,6 +308,18 @@ It then shows an overall ranking of all the configurations
 - REST API integration
 
 ---
+
+## Open Source Projects used
+[DoHLyzer](https://github.com/AdamLBS/DoHLyzer) forked by Adam Elaoumari, here are the modifications made :
+- Added multithreading for the Garbage Collector used to create the flows
+- Changed thresholds to write flows in the CSV files (this fixes an issue where small DNS exfiltration were not acknowledged)
+- Fixed compatibility issues with the latest Python version (3.10+)
+
+[DoHBrw-2020-Dataset](https://www.unb.ca/cic/datasets/dohbrw-2020.html) is used for training and testing the machine learning models.
+
+[DoHXp](https://ieeexplore.ieee.org/document/9844067) by J. Steadman and S. Scott-Hayward
+
+
 
 ## License and Citations
 
