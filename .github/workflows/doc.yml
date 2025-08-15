@@ -37,7 +37,7 @@ jobs:
       - name: Install MkDocs + plugins
         run: |
           pip install --upgrade pip
-          pip install mkdocs-material mkdocs-mermaid2-plugin pymdown-extensions
+          pip install mkdocs-material mkdocs-mermaid2-plugin pymdown-extensions mkdocs-video
 
       # On copie le README.md racine en page d'accueil (index.md) pour le site
       - name: Prepare docs (copy README as index)

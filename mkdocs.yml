@@ -24,6 +24,7 @@ plugins:
   - search:
       lang: en
   - mermaid2
+  - mkdocs-video
 
 markdown_extensions:
   - admonition
