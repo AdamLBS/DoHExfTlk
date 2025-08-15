@@ -125,6 +125,12 @@ flowchart TB
 git clone git@github.com:AdamLBS/DohExfTlk.git
 cd DoHExfTlk
 
+# 2. Download the dataset's CSVs used for the model training (l1-benign.csv & l2-malicious.csv)
+wget http://cicresearch.ca/CICDataset/DoHBrw-2020/Dataset/CSVs/Total_CSVs.zip
+unzip Total_CSVs.zip
+mkdir -p datasets
+cp l2-benign.csv l2-malicious.csv datasets/
+
 # 2. Generate TLS certificates
 chmod +x generate_certs.sh
 ./generate_certs.sh
@@ -258,10 +264,7 @@ python config_generator.py --list
 └── docs/              # Documentation
 └── models/            # Trained ML models
 └── client_scripts/    # Scripts that can be ran in the client container
-└── datasets/              # Dataset files for training
-
-
-
+└── datasets/          # Dataset files for training
 ```
 
 ---
