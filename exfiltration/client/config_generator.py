@@ -138,8 +138,6 @@ def main():
                        help='Create a new configuration interactively')
     parser.add_argument('--list', action='store_true',
                        help='List all available configurations')
-    parser.add_argument('--file', metavar='FILE',
-                       help='File to use for testing')
     parser.add_argument('--edit', metavar='CONFIG',
                        help='Edit an existing configuration')
     
@@ -182,13 +180,11 @@ def main():
         print("  --create      Create a new configuration")
         print("  --list        List configurations")
         print("  --templates   Create base templates")
-        print("  --test CONFIG Test a configuration")
         print("  --edit CONFIG Edit a configuration")
         print()
         print("Usage examples:")
         print("  python config_generator.py --create")
         print("  python config_generator.py --list")
-        print("  python config_generator.py --test stealth_research.json")
         print("  python config_generator.py --templates")
 
 if __name__ == "__main__":
