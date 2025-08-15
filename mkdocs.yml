@@ -11,7 +11,7 @@ theme:
     - toc.follow
 
 nav:
-  - Accueil: index.md           
+  - Home: index.md           
   - Architecture: architecture.md
   - Configuration: configuration.md
   - Examples: examples.md
@@ -21,14 +21,19 @@ nav:
 docs_dir: docs
 
 plugins:
-  - search
+  - search:
+      lang: en
   - mermaid2
 
 markdown_extensions:
   - admonition
   - toc:
       permalink: true
-  - pymdownx.superfences 
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:mermaid2.fence_mermaid
   - pymdownx.details
   - pymdownx.highlight
   - pymdownx.tabbed:
