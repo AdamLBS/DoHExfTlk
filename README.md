@@ -286,7 +286,7 @@ python config_generator.py --list
 
 If used in academic work, please cite:
 ```bibtex
-@misc{dohexftlk-2025,
+@misc{DoHExfTlk,
   title={DNS-Over-HTTPS Exfiltration and Evasion Toolkit},
   author={Adam Elaoumari},
   year={2025},
