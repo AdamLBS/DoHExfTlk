@@ -37,7 +37,6 @@ logger = logging.getLogger("trainer")
 
 
 def pick_threshold_at_fpr(y_true, y_proba, target_fpr=0.01):
-    """Choisit un seuil tel que FPR ≈ target_fpr (sur l'ensemble de validation)."""
     fpr, tpr, thr = roc_curve(y_true, y_proba)
     if len(thr) == 0:
         return 0.5
@@ -46,8 +45,6 @@ def pick_threshold_at_fpr(y_true, y_proba, target_fpr=0.01):
 
 
 class NetworkFlowMLTrainer:
-    """ML trainer for network flow datasets — Pipeline + Calibration + Threshold"""
-
     def __init__(self, quick_mode=False, fpr_target=0.01, group_col=None):
         self.quick_mode = quick_mode
         self.max_samples = 10000 if quick_mode else None

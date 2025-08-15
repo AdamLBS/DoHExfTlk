@@ -132,7 +132,6 @@ def list_configs():
             print(f"Error loading {config_file}: {e}")
 
 def main():
-    """Main function with command line interface"""
     parser = argparse.ArgumentParser(description='DoH Evasion Configuration Generator')
     parser.add_argument('--create', action='store_true',
                        help='Create a new configuration interactively')

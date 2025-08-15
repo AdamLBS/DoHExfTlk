@@ -75,7 +75,7 @@ Config                      Model used        Detection rate
 apt_simulation              random_forest        12.50%
 stealth_burst               logistic_regression   3.23%
 ...
-🏆 Best (least detected): stealth_burst — 3.23% — model: logistic_regression
+Best (least detected): stealth_burst — 3.23% — model: logistic_regression
 ```
 
 > If no logs are found for a config, you’ll see a message and it will be skipped.
@@ -99,7 +99,7 @@ stealth_burst               logistic_regression   3.23%
 - **No filtered CSV found**: ensure the traffic actually hit `/dns-query` and the filter script path is correct (`IN_CONTAINER_FILTER_SCRIPT`).  
 - **Predictor says no models**: train first (`ml_analyzer/trainer.py`), then re‑run pipeline.
 - **TLS errors**: for quick tests use `curl -k` or import the generated CA into your lab machine.
-- **Ranking empty**: check per‑config `logs/predictor_*.log` for model sections (🤖 markers).
+- **Ranking empty**: check per‑config `logs/predictor_*.log` for model sections.
 
 ---
 

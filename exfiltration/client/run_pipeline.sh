@@ -5,7 +5,6 @@ set -euo pipefail
 # Paths on the HOST
 TEST_CONFIG_DIR="${TEST_CONFIG_DIR:-./test_configs}"     # contains .json config files
 RESULTS_DIR="${RESULTS_DIR:-./results}"                  # where results are copied on the host
-SCRIPTS_DIR="${SCRIPTS_DIR:-./scripts}"                  # not used directly here but kept for consistency
 FILE_TO_EXFILTRATE="${FILE_TO_EXFILTRATE:-/app/test_data/image.png}"
 
 # Docker Compose
@@ -68,11 +67,10 @@ for cfg in "${configs[@]}"; do
 
   echo
   echo "=================================================="
-  echo "▶ Test: $cfg_base"
+  echo "  Test: $cfg_base"
   echo "   ID : $test_id"
   echo "=================================================="
 
-  # Run client + filter + predictor inside the exfil container
   docker exec "$EXFIL_CONTAINER" bash -lc "
     set -euo pipefail
     echo '[client] Starting quick test: $cfg_base.json'
@@ -136,11 +134,7 @@ for logf in "$RUN_ROOT"/*/logs/predictor_*.log; do
   benign=""
   malicious=""
 
-  # Read line by line
   while IFS= read -r line; do
-    # Model block detection. Expected formats include:
-    #   "INFO - 🤖 RANDOM_FOREST:" or "INFO - 🤖 LOGISTIC_REGRESSION:"
-    # Adjust the regex to your predictor log format if needed.
     if [[ "$line" =~ 🤖[[:space:]]+([A-Za-z0-9_]+): ]]; then
       current="${BASH_REMATCH[1]}"
       current="$(echo "$current" | tr '[:upper:]' '[:lower:]')"  # normalize
@@ -174,7 +168,6 @@ for logf in "$RUN_ROOT"/*/logs/predictor_*.log; do
 done
 shopt -u nullglob
 
-# Print table
 printf "\n%-24s %10s %12s %10s %14s\n" "Model" "Benign" "Malicious" "Total" "Detection Rate"
 printf "%-24s %10s %12s %10s %14s\n" "------------------------" "----------" "------------" "----------" "--------------"
 
@@ -196,6 +189,7 @@ else
 fi
 
 echo
+
 # =====================[ Pick best config (least detected) ]=====================
 info "Ranking configs by 'least detected'…"
 
@@ -206,11 +200,9 @@ for cfgdir in "$RUN_ROOT"/*; do
   [[ -d "$cfgdir" ]] || continue
   cfg_name="$(basename "$cfgdir")"
 
-  # pick the latest predictor log produced for this config
   logf="$(ls -1t "$cfgdir"/logs/predictor_*.log 2>/dev/null | head -n1 || true)"
   [[ -f "$logf" ]] || { info "No predictor log for $cfg_name, skipping."; continue; }
 
-  # accumulate per-model counts from the log
   declare -A M_BENIGN M_MALICIOUS M_TOTAL
   current=""; benign=""; malicious=""
 
@@ -236,14 +228,10 @@ for cfgdir in "$RUN_ROOT"/*; do
     fi
   done < "$logf"
 
-  # choose which model to judge the config by:
-  # prefer 'consensus' if present, else random_forest, else logistic_regression,
-  # else any model we have.
   chosen=""
   for cand in consensus random_forest logistic_regression gradient_boosting svm naive_bayes; do
     if [[ -n "${M_TOTAL[$cand]:-}" ]]; then chosen="$cand"; break; fi
   done
-  # fallback to first available model if none of the above matched
   if [[ -z "$chosen" ]]; then
     for k in "${!M_TOTAL[@]}"; do chosen="$k"; break; done
   fi
@@ -253,21 +241,18 @@ for cfgdir in "$RUN_ROOT"/*; do
     continue
   fi
 
-  # detection rate for this config using the chosen model
   rate="$(awk -v m="${M_MALICIOUS[$chosen]}" -v t="${M_TOTAL[$chosen]}" 'BEGIN{ printf("%.6f", (m+0.0)/t) }')"
   CFG_RATE["$cfg_name"]="$rate"
   CFG_MODEL["$cfg_name"]="$chosen"
 done
 shopt -u nullglob
 
-# print ranking
 printf "\n%-28s %-18s %-16s\n" "Config" "Model used" "Detection rate"
 printf "%-28s %-18s %-16s\n" "----------------------------" "------------------" "----------------"
 for cfg in "${!CFG_RATE[@]}"; do
   printf "%-28s %-18s %-16s\n" "$cfg" "${CFG_MODEL[$cfg]}" "$(awk -v r="${CFG_RATE[$cfg]}" 'BEGIN{ printf("%.2f%%", r*100) }')"
 done | sort -k3,3V
 
-# find the winner (min rate)
 best_cfg=""
 best_rate=""
 for cfg in "${!CFG_RATE[@]}"; do

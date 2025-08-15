@@ -1,10 +1,4 @@
 #!/usr/bin/env python3
-"""
-JSON Configuration Loader for DoH Exfiltration
-
-Configuration loading system for JSON files to facilitate evasion testing
-and allow flexible configuration of exfiltration parameters.
-"""
 
 import json
 import os
@@ -27,7 +21,6 @@ class JSONConfigLoader:
         try:
             config_file = Path(config_path)
             if not config_file.exists():
-                # Try in the configs directory
                 config_file = self.config_dir / config_path
                 if not config_file.exists():
                     logger.error(f"Configuration file not found: {config_path}")
@@ -86,14 +79,12 @@ class JSONConfigLoader:
             return False
     
     def list_available_configs(self) -> List[str]:
-        """List all available configurations"""
         config_files = []
         for file in self.config_dir.glob("*.json"):
             config_files.append(file.stem)
         return sorted(config_files)
     
     def validate_config(self, config_data: Dict[str, Any]) -> bool:
-        """Validate JSON configuration"""
         required_fields = ['doh_server', 'target_domain', 'chunk_size']
         
         for field in required_fields:
