@@ -15,6 +15,7 @@
 > - Authorized testing in **controlled environments**
 >
 > **You agree to:**
+>
 > - Use this toolkit only on systems you own or have explicit written permission to test
 > - Comply with all applicable laws and regulations
 > - Accept full responsibility for your actions and their consequences  
@@ -49,6 +50,7 @@ It combines:
 - **Data reconstruction**
 
 **Use cases:**
+
 - Academic research
 - Cybersecurity training labs
 - Benchmarking detection methods
