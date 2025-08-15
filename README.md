@@ -1,68 +1,104 @@
 # DoHExfTlk: DNS-Over-HTTPS Exfiltration Toolkit
 
-> **IMPORTANT DISCLAIMER - EDUCATIONAL AND RESEARCH USE ONLY**
-> 
-> This platform is developed exclusively for academic research, cybersecurity education, and authorized security testing in controlled environments. 
-> 
-> **The author disclaims all responsibility for any malicious, illegal, or unauthorized use of this tool.** Users are solely responsible for ensuring their use complies with applicable laws and regulations. This tool should only be used on systems you own or have explicit written permission to test.
-> 
-> **By using this platform, you acknowledge that:**
-> - You will use it only for legitimate educational, research, or authorized testing purposes
-> - You understand the legal and ethical implications of cybersecurity testing
-> - You will not use this tool for any malicious activities or unauthorized access
-> - You assume full responsibility for your actions and any consequences thereof
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
+[![Python](https://img.shields.io/badge/Python-3.8+-green.svg)](https://python.org/)
+[![License](https://img.shields.io/badge/License-Educational-orange.svg)](#legal-disclaimer)
 
 ---
 
-> **Complete platform for data exfiltration detection via DNS-over-HTTPS (DoH)**  
-> *Cybersecurity research toolkit for analysis and detection of advanced exfiltration techniques*
+## ⚠️ Legal Disclaimer
 
-[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
-[![Python](https://img.shields.io/badge/Python-3.8+-green.svg)](https://python.org/)
-[![License](https://img.shields.io/badge/License-Educational-orange.svg)](#)
+> **EDUCATIONAL AND RESEARCH USE ONLY**  
+> This toolkit is intended exclusively for:
+> - Academic research
+> - Cybersecurity training
+> - Authorized testing in **controlled environments**
+>
+> **You agree to:**
+> - Use this toolkit only on systems you own or have explicit written permission to test
+> - Comply with all applicable laws and regulations
+> - Accept full responsibility for your actions and their consequences  
+>
+> **The author disclaims any liability** for malicious, illegal, or unauthorized use.
+
+---
+
+## 📑 Table of Contents
+- [Overview](#overview)
+- [System Architecture](#system-architecture)
+- [Quick Start](#quick-start)
+- [Main Components](#main-components)
+- [Detection Features](#detection-features)
+- [Machine Learning Workflow](#machine-learning-workflow)
+- [Configuration Management](#configuration-management)
+- [Security Considerations](#security-considerations)
+- [Development & Contribution](#development--contribution)
+- [Roadmap](#roadmap)
+- [License & Citation](#license-and-citations)
+
+---
 
 ## Overview
 
-This research platform enables the study and detection of data exfiltration techniques using DNS-over-HTTPS (DoH). It combines multiple complementary approaches: network traffic capture, behavioral analysis, machine learning, and data reconstruction.
+DoHExfTlk is a **research-oriented platform** for studying and detecting data exfiltration via **DNS-over-HTTPS (DoH)**.  
+It combines:
 
-### Project objectives
+- **Network traffic capture**
+- **Behavioral analysis**
+- **Machine learning classification**
+- **Data reconstruction**
 
-- **Academic research**: Study of DoH exfiltration techniques
-- **Advanced detection**: Combination of traditional and ML methods
-- **Forensic analysis**: Reconstruction and analysis of exfiltrated data
-- **Training**: Controlled environment for cybersecurity learning
+**Use cases:**
+- Academic research
+- Cybersecurity training labs
+- Forensic investigations
+- Benchmarking detection methods
 
-## System architecture
+---
 
+## System Architecture
+
+```mermaid
+flowchart LR
+    subgraph ClientTests[Client Tests]
+        EC[Exfil Clients]
+        TS[Test Scripts]
+        CT[Config Tools]
+    end
+
+    subgraph DoHInfra[DoH Infrastructure]
+        DS[DoH Server]
+        DR[DNS Resolver]
+        TP[TLS Proxy]
+    end
+
+    subgraph DetectionLayer[Detection Layer]
+        TA[Traffic Analyzer]
+        ML[ML Models]
+        PD[Pattern Detection]
+    end
+
+    subgraph DataAnalysis[Data Analysis]
+        DL[DoHLyzer]
+        MT[ML Trainer]
+        CL[Classifiers]
+    end
+
+    ClientTests --> DoHInfra --> DetectionLayer --> DataAnalysis
 ```
-┌─────────────────┬─────────────────┬─────────────────┐
-│   Client Tests  │  DoH Infrastructure │  Detection Layer  │
-│                 │                     │                   │
-│ • Exfil Clients │ • DoH Server        │ • Traffic Analyzer│
-│ • Test Scripts  │ • DNS Resolver      │ • ML Models       │
-│ • Config Tools  │ • TLS Proxy        │ • Pattern Detection│
-└─────────────────┴─────────────────┴─────────────────┘
-                            │
-                    ┌───────────────┐
-                    │ Data Analysis │
-                    │               │
-                    │ • DoHLyzer    │
-                    │ • ML Trainer  │
-                    │ • Classifiers │
-                    └───────────────┘
-```
 
-## Quick start
+---
+
+## Quick Start
 
 ### Prerequisites
-- Docker & Docker Compose
-- Linux/macOS (WSL2 for Windows)
-- 4GB RAM minimum
+- **Docker** & **Docker Compose**
+- Linux / macOS (or WSL2 for Windows)
+- At least **4 GB RAM**
 
-### Installation in 3 steps
-
+### Installation
 ```bash
-# 1. Clone the project
+# 1. Clone repository
 git clone git@github.com:AdamLBS/DohExfTlk.git
 cd DoHExfTlk
 
@@ -70,14 +106,13 @@ cd DoHExfTlk
 chmod +x generate_certs.sh
 ./generate_certs.sh
 
-# 3. Start the infrastructure
+# 3. Start infrastructure
 docker compose up -d
 ```
 
-### Installation verification
-
+### Verification
 ```bash
-# Check services
+# Check running services
 docker compose ps
 
 # Test DoH server
@@ -87,101 +122,78 @@ docker exec -it client_test bash /scripts/test_doh.sh
 docker exec -it client_test bash /scripts/test_exfiltration.sh
 ```
 
-## Complete Documentation
+---
 
-| Document | Description |
-|----------|-------------|
-| [User Guide](docs/user-guide.md) | Complete usage instructions and workflows |
-| [Technical Architecture](docs/architecture.md) | Infrastructure details and design |
-| [Configuration Guide](docs/configuration.md) | Component configuration and customization |
-| [Machine Learning](docs/ml-analysis.md) | ML models, training, and classification |
-| [Data Analysis](docs/data-analysis.md) | Traffic analysis and pattern detection |
-| [Development Guide](docs/development.md) | Developer setup and contribution guide |
-| [Exfiltration ](docs/exfiltration.md) | File exfiltration guide |
-| [FAQ](docs/faq.md) | Frequently asked questions |
-| [Troubleshooting](docs/troubleshooting.md) | Common issues and solutions |
-| [Examples](docs/examples.md) | Usage examples and scenarios |
-
-## Main components
+## Main Components
 
 ### DoH Infrastructure
-- **DoH Server**: DNS-over-HTTPS server with TLS
-- **DNS Resolver**: Unbound resolution backend
-- **TLS Proxy**: Traefik for SSL termination
+- **DoH Server** with TLS
+- **DNS Resolver** (Unbound)
+- **TLS Proxy** (Traefik)
 
-### Detection and analysis
-- **Traffic Analyzer**: Network traffic capture and analysis
-- **Exfiltration Server**: Pattern detection and reconstruction
-- **DoHLyzer**: Behavioral analysis framework
-- **ML Analyzer**: Machine learning models
+### Detection & Analysis
+- **Traffic Analyzer** (pcap capture + flow extraction)
+- **Exfiltration Server** (pattern detection + data reconstruction)
+- **DoHLyzer** (behavioral analysis)
+- **ML Analyzer** (model training & prediction)
 
-### Clients and testing
-- **Configuration Generator**: JSON-based test scenario creation (`config_generator.py`)
-- **Exfiltration Client**: Advanced client with multiple encoding and evasion techniques
-- **Test Scenarios**: APT simulation, stealth research, speed benchmarks
-- **Test Scripts**: Automated testing and validation tools
+### Clients & Testing
+- **Configuration Generator** (`config_generator.py`)
+- **Exfiltration Client** (encoding + evasion techniques)
+- **Predefined Test Scenarios**
+- **Automated Test Scripts**
 
-## Detection features
+---
 
-### Traditional methods
-- **Pattern analysis**: Detection of suspicious DNS structures
-- **Temporal analysis**: Identification of abnormal rhythms
-- **Content analysis**: Suspicious Base64 encoding detection
+## Detection Features
+
+### Traditional Detection
+- **Pattern analysis**: suspicious DNS label structures
+- **Temporal analysis**: irregular timing patterns
+- **Content analysis**: encoded payload detection
+
+---
 
 ## Machine Learning Workflow
 
 ### Training Phase
 ```bash
-# 1. Train models on network flow datasets
 cd ml_analyzer
-python3 model_trainer.py
-
-# Models are saved to /models/ directory
+python3 trainer.py --quick --fpr 0.01
+# Models saved in /models/
 ```
 
-### Detection and Classification Phase
+### Detection & Classification Phase
 ```bash
-# 2. DoHLyzer analyzes traffic and generates flow data
-# Results stored in traffic_analyzer/output/output.csv
-
-# 3. Filter detected exfiltration queries
+# 1. Analyze traffic with DoHLyzer
+# 2. Filter detected queries
 cd exfiltration/client
 ./filter_detection_csv.sh
 
-# 4. Classify filtered queries with trained models
+# 3. Classify with trained models
 cd ../../ml_analyzer
-python3 predictor.py --input ../traffic_analyzer/output/filtered_output.csv
+python3 predict.py ../traffic_analyzer/output/filtered_output.csv
 ```
 
-The ML pipeline validates whether DoHLyzer-detected queries are truly malicious using pre-trained models.
+**ML pipeline goal:** confirm whether detected flows are malicious or benign.
 
-### Data reconstruction
-- **Automatic assembly**: Intelligent chunk reconstruction
-- **Multi-format decoding**: Base64, Hex, Base32, custom encodings
-- **File type detection**: Automatic identification and analysis
-- **ML validation**: Classification of detected queries as malicious/benign
+---
 
 ## Configuration Management
 
-### JSON-based Configuration System
+### Create or Manage Configurations
 ```bash
-# Generate new configuration interactively
-cd exfiltration/client/
+cd exfiltration/client
+
+# Create interactively
 python config_generator.py --create
 
-# Use predefined templates
-python config_generator.py --templates
-
-# List available configurations
+# List available
 python config_generator.py --list
 
-# Test configuration before use
-python config_generator.py --test apt_simulation.json
 ```
 
-### Configuration Examples
-
-**APT Simulation:**
+**Example Configuration (APT Simulation)**:
 ```json
 {
   "name": "APT Simulation",
@@ -194,92 +206,70 @@ python config_generator.py --test apt_simulation.json
     "base_delay": 30.0,
     "encryption": true,
     "domain_rotation": true,
-    "backup_domains": ["security-updates.local", "maintenance-api.local"]
+    "backup_domains": [
+      "security-updates.local",
+      "maintenance-api.local"
+    ]
   }
-}
-```
-
-**Running with Configuration:**
-```bash
-python run_client.py --config test_configs/apt_simulation.json
-```
-
-## Security considerations
-
-**EDUCATIONAL USE ONLY**
-
-This platform is designed for:
-- Academic research
-- Cybersecurity training
-- Authorized testing in controlled environment
-- No malicious use
-- No unauthorized surveillance
-
-## Development and contribution
-
-### Code structure
-```
-├── exfiltration/          # Exfiltration clients and servers
-├── DoHLyzer/             # DoH analysis framework
-├── ml_analyzer/          # Machine learning models
-├── traffic_analyzer/     # Network capture and analysis
-├── classifier/           # Specialized classifiers
-├── datasets/             # Training datasets
-└── docs/                 # Complete documentation
-```
-
-### Testing and validation
-```bash
-# Unit tests
-python -m pytest tests/
-
-# Integration tests
-./scripts/integration_tests.sh
-
-# Performance benchmarks
-./scripts/benchmark.sh
-```
-
-## Roadmap
-
-### Current version (v1.0)
-- Complete DoH infrastructure
-- Pattern detection
-- Basic Machine Learning
-- Data reconstruction
-
-### Next versions
-- Advanced real-time detection
-- Deep learning behavioral analysis
-- Web monitoring interface
-- REST API for integrations
-
-## Support and resources
-
-### Documentation
-- [Complete FAQ](docs/faq.md)
-- [Troubleshooting](docs/troubleshooting.md)
-- [Usage examples](docs/examples.md)
-
-### Community
-- GitHub Issues for bugs and features
-- Discussions for general questions
-- Wiki for collaborative documentation
-
-## License and citations
-
-This project is developed in an academic context. For any academic use, please cite:
-
-```bibtex
-@misc{dohexftlk-2025,
-  title={DNS-Over-HTTPS Exfiltration and Evasion Toolkit},
-  author={[Adam Elaoumari]},
-  year={2025},
-  institution={University of Kent - Canterbury},
-  note={MSc Cyber Security Dissertation Project},
 }
 ```
 
 ---
 
-**IMPORTANT REMINDER**: This platform is exclusively intended for research, education and authorized testing. The author disclaims all responsibility for any malicious, illegal, or unauthorized use of this tool. Users assume full responsibility for their actions and must ensure compliance with all applicable laws and regulations.
+## Security Considerations
+- Run **only** in isolated lab environments (as this code uses insecure Docker feature and exposes the host's Docker socket to some containers)
+- Never connect to production networks
+- Use VM snapshots or containers for quick reset
+- Ensure **all participants** have legal authorization
+
+---
+
+## Development & Contribution
+
+**Code Structure**
+```
+├── exfiltration/      # DoH exfiltration Clients & servers
+├── ml_analyzer/       # ML training & prediction
+├── traffic_analyzer/  # DoH Traffic analysis
+├── datasets/          # Training datasets
+└── docs/              # Documentation
+└── models/            # Trained ML models
+└── client_scripts/    # Scripts that can be ran in the client container
+└── datasets/              # Dataset files for training
+
+
+
+```
+
+---
+
+## Roadmap
+
+**v1.0**
+- Complete DoH infra
+- Pattern detection
+- Basic ML models
+- Data reconstruction
+
+**Future**
+- Real-time detection
+- Deep learning
+- Web monitoring dashboard
+- REST API integration
+
+---
+
+## License and Citations
+
+If used in academic work, please cite:
+```bibtex
+@misc{dohexftlk-2025,
+  title={DNS-Over-HTTPS Exfiltration and Evasion Toolkit},
+  author={Adam Elaoumari},
+  year={2025},
+  institution={University of Kent - Canterbury},
+  note={MSc Cyber Security Dissertation Project}
+}
+```
+
+---

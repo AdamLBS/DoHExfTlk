@@ -133,13 +133,6 @@ tester.run_all_tests()
 - **Compression detection** and automatic decompression
 - **File type identification** from magic bytes
 
-### Forensic Capabilities
-
-- **Complete session metadata** (timing, source IPs, chunk analysis)
-- **Data reconstruction** with integrity verification
-- **Export capabilities** for further analysis
-- **Statistics and reporting** for research documentation
-
 ## 🛡️ Detection Integration
 
 ### ML Feature Extraction

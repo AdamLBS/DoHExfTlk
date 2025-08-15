@@ -9,7 +9,6 @@ A comprehensive research platform for studying and detecting data exfiltration t
 - **Academic research** on DoH exfiltration techniques
 - **Cybersecurity training** in controlled environments
 - **Detection method development** and validation
-- **Forensic analysis** of exfiltration attempts
 
 ### Is this platform ready for production use?
 This is primarily a research and educational platform. While it demonstrates effective detection techniques, production deployment would require additional hardening, monitoring, and integration work.
