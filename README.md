@@ -175,7 +175,6 @@ python model_trainer.py
 
 cd DoHExfTlk/exfiltration/client
 bash run_pipeline.sh
-
 ```
 
 ---
