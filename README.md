@@ -71,13 +71,17 @@ flowchart TB
 
     subgraph Monitoring[Traffic Monitoring]
         TrafficAnalyzer[Traffic Analyzer<br/>captures DoH traffic]
-        ExfilInterceptor[Exfil Interceptor<br/>captures DNS queries]
+        ExfilInterceptor[Exfil Interceptor<br/>reconstructs & saves files]
     end
 
     subgraph Analysis[Detection & Analysis]
         DoHLyzer[DoHLyzer<br/>Flow Analysis]
         MLAnalyzer[ML Analyzer<br/>Classification]
         PatternDetection[Pattern Detection<br/>Behavioral Analysis]
+    end
+
+    subgraph Artifacts[Artifacts & Storage]
+        ArtifactStore[Reconstructed Files<br/>Artifact Store]
     end
 
     %% Main communication flow
@@ -94,20 +98,25 @@ flowchart TB
 
     %% Analysis flow
     TrafficAnalyzer --> DoHLyzer
-    ExfilInterceptor --> PatternDetection
+    TrafficAnalyzer --> PatternDetection
     DoHLyzer --> MLAnalyzer
     PatternDetection --> MLAnalyzer
+
+    %% Exfil reconstruction (no analysis)
+    ExfilInterceptor --> ArtifactStore
 
     %% Styling
     classDef client fill:#e1f5fe
     classDef infra fill:#f3e5f5
     classDef monitor fill:#fff3e0
     classDef analysis fill:#e8f5e8
+    classDef storage fill:#e0f7fa
 
     class Client client
     class Traefik,DoHServer,Resolver infra
     class TrafficAnalyzer,ExfilInterceptor monitor
     class DoHLyzer,MLAnalyzer,PatternDetection analysis
+    class ArtifactStore storage
 ```
 
 ---
