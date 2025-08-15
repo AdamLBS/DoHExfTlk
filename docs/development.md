@@ -62,13 +62,13 @@ Kent-Dissertation/
 # Download CIRA-CIC-DoHBrw-2020 dataset
 # Source: https://www.unb.ca/cic/datasets/dohbrw-2020.html
 
-# Place CSV files in datasets directory
-mkdir -p datasets/
-# Copy downloaded CSV files to datasets/
+wget http://cicresearch.ca/CICDataset/DoHBrw-2020/Dataset/CSVs/Total_CSVs.zip
+unzip Total_CSVs.zip
+mkdir -p datasets
+cp l2-benign.csv l2-malicious.csv datasets/
 
 # Verify dataset structure
 head -5 datasets/*.csv
-# Should contain network flow features and Label column
 ```
 
 ### 1. ML Model Development
@@ -85,12 +85,7 @@ ls ../models/
 ```bash
 # DoHLyzer generates flow analysis
 # Results in traffic_analyzer/output/output.csv
-
-# Filter for detected exfiltration queries only
-cd exfiltration/client
-./filter_detection_csv.sh
-
-# This creates filtered dataset with malicious queries
+docker compose up traffic_analyzer
 ```
 
 ### 3. Query Classification
@@ -180,20 +175,8 @@ docker exec -it [container_name] bash
 # View logs with timestamps
 docker logs -f -t [container_name]
 
-# Debug network issues
-docker exec [container] netstat -tulpn
-docker exec [container] tcpdump -i any -n
 ```
 
-### Python Debugging
-```python
-# Add debugging to Python code
-import logging
-logging.basicConfig(level=logging.DEBUG)
-
-# Breakpoint debugging
-import pdb; pdb.set_trace()
-```
 
 ### Network Analysis
 ```bash
@@ -218,23 +201,7 @@ docker stats
 # Check disk usage
 docker system df
 
-# Monitor network performance
-docker exec traffic_analyzer iftop
 ```
-
-### Code Optimization
-- Use efficient data structures
-- Implement proper caching
-- Optimize database queries
-- Profile ML model performance
-
-## 🤝 Contributing Guidelines
-
-### Code Style
-- Follow PEP 8 for Python
-- Use meaningful variable names
-- Add docstrings to functions
-- Keep functions focused and small
 
 ### Git Workflow
 ```bash
@@ -248,65 +215,3 @@ git commit -m "Add new detection method"
 # Push and create PR
 git push origin feature/new-detection-method
 ```
-
-### Documentation
-- Update README for new features
-- Add inline code comments
-- Document configuration changes
-- Update API documentation
-
-## 🔐 Security Considerations
-
-### Development Security
-- Use development certificates only
-- Don't commit secrets to Git
-- Regular dependency updates
-- Code security scanning
-
-### Production Deployment
-- Use proper TLS certificates
-- Implement access controls
-- Monitor for vulnerabilities
-- Regular security audits
-
-## 🚀 Deployment
-
-### Production Build
-```bash
-# Build production images
-docker compose -f docker-compose.prod.yml build
-
-# Deploy with production settings
-docker compose -f docker-compose.prod.yml up -d
-```
-
-### Monitoring Setup
-```bash
-# Add monitoring stack
-docker compose -f docker-compose.yml -f monitoring.yml up -d
-
-# View metrics
-curl http://localhost:9090  # Prometheus
-curl http://localhost:3000  # Grafana
-```
-
-## 📋 Maintenance
-
-### Regular Tasks
-- Update Docker images
-- Clean old detection data
-- Retrain ML models
-- Review security logs
-
-### Backup Procedures
-```bash
-# Backup configuration
-tar -czf backup_$(date +%Y%m%d).tar.gz \
-    docker-compose.yml certs/ datasets/ models/
-
-# Backup detection data
-docker cp exfil_interceptor:/app/captured ./backup/captured/
-docker cp traffic_analyzer:/app/output ./backup/analysis/
-```
-
-This development guide provides the essential information for working with the DoH Exfiltration Detection Platform while keeping focus on the practical workflow and key components.
