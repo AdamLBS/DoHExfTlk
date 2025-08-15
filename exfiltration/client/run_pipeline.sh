@@ -266,7 +266,7 @@ for cfg in "${!CFG_RATE[@]}"; do
 done
 
 if [[ -n "$best_cfg" ]]; then
-  printf "\n🏆 Best (least detected) config: %s  —  rate: %s  —  model: %s\n" \
+  printf "\nBest (least detected) config: %s  —  rate: %s  —  model: %s\n" \
     "$best_cfg" "$(awk -v r="$best_rate" 'BEGIN{ printf("%.2f%%", r*100) }')" "${CFG_MODEL[$best_cfg]}"
 else
   echo "No configs could be ranked."

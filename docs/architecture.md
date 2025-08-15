@@ -1,315 +1,67 @@
-# Technical Architecture
+# DoHExfTlk — Technical Architecture
 
-## 🏗️ System Overview
+## 1) Overview
+- Goal: **study & detect data exfiltration over DNS‑over‑HTTPS (DoH)** in a lab.
+- Stack: **Traefik (TLS) → DoH Server → DNS Resolver**, with **dual monitoring** and **ML validation** (on flows only).
+- Outputs: flow CSVs, **reconstructed files** (from resolver side), predictor logs, and per‑model stats.
 
-The DoH Exfiltration Detection Platform is built on a microservices architecture using Docker containers, designed for modularity, scalability, and ease of deployment.
+---
 
-## 📐 Infrastructure Components
+## 2) High‑Level Diagram
+```mermaid
+flowchart LR
+  C[Exfiltration Client] -->|HTTPS DoH| T[Traefik TLS Proxy]
+  T -->|/dns-query| D[DoH Server]
+  D -->|DNS| R[DNS Resolver]
 
-### Core Services
+  TA[Traffic Analyzer DoHLyzer] --- T
+  EI[Exfil Interceptor] --- R
 
-#### 1. DoH Infrastructure Layer
+  TA -->|Flows CSV| ML[ML Analyzer]
+  ML -->|Verdicts| RES[Results]
+
+  EI -->|Reconstructed files| CAP[Captured Files]
 ```
-┌─────────────────────────────────────────┐
-│             Traefik Proxy               │
-│    ┌─────────────┬─────────────────────┐ │
-│    │ Port 80/443 │ TLS Termination     │ │
-│    │             │ Load Balancing      │ │
-│    └─────────────┴─────────────────────┘ │
-└─────────────────┬───────────────────────┘
-                  │
-┌─────────────────▼───────────────────────┐
-│            DoH Server                   │
-│  ┌─────────────────────────────────────┐ │
-│  │ satishweb/doh-server:latest         │ │
-│  │ • Listens on port 8053              │ │
-│  │ • Endpoint: /dns-query              │ │
-│  │ • Upstream: DNS Resolver            │ │
-│  └─────────────────────────────────────┘ │
-└─────────────────┬───────────────────────┘
-                  │
-┌─────────────────▼───────────────────────┐
-│           DNS Resolver                  │
-│  ┌─────────────────────────────────────┐ │
-│  │ Unbound DNS Resolver                │ │
-│  │ • Port 53 (internal)                │ │
-│  │ • Custom configuration              │ │
-│  │ • Upstream DNS servers              │ │
-│  └─────────────────────────────────────┘ │
-└─────────────────────────────────────────┘
-```
+**Reading guide:** Client sends DoH to Traefik → forwarded to DoH Server → queries DNS Resolver.  
+**Traffic Analyzer** listens near Traefik (encrypted side) and writes **flow CSVs** → **ML Analyzer** scores those flows.  
+**Exfil Interceptor** listens near the **Resolver** (clear DNS) and **only saves reconstructed files** to `/app/captured` (it is **not** connected to the ML flow).
 
-#### 2. Detection and Analysis Layer
-```
-┌─────────────────────────────────────────┐
-│        Exfiltration Interceptor         │
-│  ┌─────────────────────────────────────┐ │
-│  │ • Network mode: host                │ │
-│  │ • Capabilities: NET_RAW, NET_ADMIN  │ │
-│  │ • Monitors DNS Resolver traffic     │ │
-│  │ • Captures clear DNS queries        │ │
-│  │ • Real-time data extraction         │ │
-│  └─────────────────────────────────────┘ │
-└─────────────────┬───────────────────────┘
-                  │
-┌─────────────────▼───────────────────────┐
-│         Traffic Analyzer               │
-│  ┌─────────────────────────────────────┐ │
-│  │ • DoHLyzer integration              │ │
-│  │ • Monitors Traefik DoH traffic      │ │
-│  │ • Flow-based analysis               │ │
-│  │ • Feature extraction               │ │
-│  │ • CSV output generation             │ │
-│  └─────────────────────────────────────┘ │
-└─────────────────┬───────────────────────┘
-                  │
-┌─────────────────▼───────────────────────┐
-│         ML Analyzer                     │
-│  ┌─────────────────────────────────────┐ │
-│  │ • Machine Learning models           │ │
-│  │ • Feature preprocessing             │ │
-│  │ • Real-time classification          │ │
-│  │ • Model training & evaluation       │ │
-│  │ • Performance metrics               │ │
-│  └─────────────────────────────────────┘ │
-└─────────────────────────────────────────┘
-```
+---
 
-#### 3. Client and Testing Layer
-```
-┌─────────────────────────────────────────┐
-│           Exfiltration Client           │
-│  ┌─────────────────────────────────────┐ │
-│  │ • Local network requests            │ │
-│  │ • DoH queries via Traefik           │ │
-│  │ • Multiple encoding methods         │ │
-│  │ • Configurable patterns             │ │
-│  │ • Evasion capabilities              │ │
-│  └─────────────────────────────────────┘ │
-└─────────────────┬───────────────────────┘
-                  │
-┌─────────────────▼───────────────────────┐
-│           Test Client                   │
-│  ┌─────────────────────────────────────┐ │
-│  │ • Ubuntu 22.04 base                │ │
-│  │ • Network tools (curl, dig, etc.)  │ │
-│  │ • Test scripts collection           │ │
-│  │ • DoH connectivity verification     │ │
-│  └─────────────────────────────────────┘ │
-└─────────────────────────────────────────┘
-```
+## 3) Components at a Glance
+| Component | Purpose |
+|---|---|
+| **Traefik** | TLS termination and routing for DoH (`/dns-query`) |
+| **DoH Server** | Handles DoH requests and forwards to resolver |
+| **DNS Resolver** | Internal DNS (e.g., Unbound) |
+| **Traffic Analyzer (DoHLyzer)** | Captures DoH traffic, extracts features/flows, exports CSV |
+| **Exfil Interceptor** | Watches resolver side, parses chunks, **reconstructs & saves files** to `/app/captured` (no ML) |
+| **ML Analyzer** | Trains & runs models on **flows**, applies tuned thresholds, outputs per‑model stats |
+| **Exfiltration Client** | Generates test traffic from JSON configs (encodings, timing, etc.) |
 
-#### 4. Data Storage and Analysis Layer
-```
-┌─────────────────────────────────────────┐
-│           Dataset Management            │
-│  ┌─────────────────────────────────────┐ │
-│  │ • L2 benign dataset                 │ │
-│  │ • L2 malicious dataset              │ │
-│  │ • Training/testing splits           │ │
-│  │ • Feature engineering               │ │
-│  └─────────────────────────────────────┘ │
-└─────────────────┬───────────────────────┘
-                  │
-┌─────────────────▼───────────────────────┐
-│        Model Training Pipeline          │
-│  ┌─────────────────────────────────────┐ │
-│  │ • Classifier training               │ │
-│  │ • Model validation                  │ │
-│  │ • Performance evaluation            │ │
-│  │ • Model persistence                 │ │
-│  └─────────────────────────────────────┘ │
-└─────────────────────────────────────────┘
-```
+---
 
-## 🔗 Network Architecture
+## 4) Ports & Endpoints
+| Service | Port(s) | Notes |
+|---|---|---|
+| **Traefik** | 443 (HTTPS), 80 (HTTP), 8080 (UI, optional) | DoH endpoint: **`/dns-query`** |
+| **DoH Server** | 8053 (internal) | HTTP behind Traefik |
+| **DNS Resolver** | 53 TCP/UDP (internal) | Internal only |
 
-### Network Topology
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Docker Bridge Network                  │
-│  ┌─────────────────┐  ┌─────────────────────────────────┐ │
-│  │ Exfil Intercept │  │      Traffic Analyzer          │ │
-│  │ (monitors       │  │      (monitors Traefik         │ │
-│  │  DNS resolver)  │  │       DoH traffic)             │ │
-│  └─────────────────┘  └─────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────┘
-                              │
-┌─────────────────────────────▼───────────────────────────┐
-│                  Docker Bridge Network                  │
-│                      (dohnet)                           │
-│                                                         │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐   │
-│  │   Traefik   │  │ DoH Server  │  │   DNS Resolver  │   │
-│  │   (proxy)   │  │ (doh-proxy) │  │   (unbound)     │   │
-│  └─────────────┘  └─────────────┘  └─────────────────┘   │
-│                                                         │
-│  ┌─────────────┐  ┌─────────────────────────────────────┐ │
-│  │Client Test  │  │      Exfiltration Client            │ │
-│  │(local net)  │  │      (DoH requests)                 │ │
-│  └─────────────┘  └─────────────────────────────────────┘ │
-│                                                         │
-│  ┌─────────────┐  ┌─────────────────────────────────────┐ │
-│  │ML Analyzer  │  │      Model Training                 │ │
-│  │(inference)  │  │      (batch processing)             │ │
-│  └─────────────┘  └─────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────┘
-```
+---
 
-### Port Mapping
-| Service | Internal Port | External Port | Protocol |
-|---------|---------------|---------------|----------|
-| Traefik | 80, 443, 8080 | 80, 443, 8080 | HTTP/HTTPS |
-| DoH Server | 8053 | - | HTTP |
-| DNS Resolver | 53 | - | UDP/TCP |
-| ML Services | - | - | Internal only |
+## 5) Data Flow (5 steps)
+1. **Client → Traefik (HTTPS/DoH)**: requests hit `/dns-query` with TLS.
+2. **Traefik → DoH Server**: forwards to the DoH app.
+3. **DoH Server → Resolver**: translates to DNS queries.
+4. **Monitoring**:  
+   - **Traffic Analyzer** (near Traefik) → **flow CSV** (DoHLyzer).  
+   - **Exfil Interceptor** (near Resolver) → **reconstructs files to `/app/captured`** (no ML path).
+5. **ML Validation (flows only)**: `predict.py` ingests CSV, applies per‑model thresholds, prints **malicious/benign** counts and detection rates.
 
-## 📊 Data Flow Architecture
+---
 
-### 1. DoH Query Processing and Monitoring
-```
-Client → Traefik → DoH Server → DNS Resolver
-  ↓        ↓                       ↓
-  ↓    Traffic Analyzer      Exfil Interceptor
-  ↓    (DoHLyzer)           (Clear DNS Monitoring)
-  ↓        ↓                       ↓
-  ↓    Flow Analysis         Pattern Detection
-  ↓    Feature Extract.      Data Reconstruction
-  ↓        ↓                       ↓
-  └────→ ML Classification ←───────┘
-             ↓
-         ML Reports
-```
-
-### 2. Machine Learning Pipeline
-```
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│  Raw Data   │ →  │ Preprocess  │ →  │  Training   │
-│             │    │             │    │             │
-│ • DoH flows │    │ • Clean     │    │ • RF, GB    │
-│ • DNS logs  │    │ • Engineer  │    │ • LR, SVM   │
-│ • Features  │    │ • Normalize │    │ • Validation│
-└─────────────┘    └─────────────┘    └─────────────┘
-                                           │
-┌─────────────┐    ┌─────────────┐    ┌───▼─────────┐
-│  Deploy     │ ←  │  Evaluate   │ ←  │  Models     │
-│             │    │             │    │             │
-│ • Production│    │ • Metrics   │    │ • Saved     │
-│ • Real-time │    │ • Reports   │    │ • Versioned │
-│ • Inference │    │ • Compare   │    │ • Artifacts │
-└─────────────┘    └─────────────┘    └─────────────┘
-```
-
-### 3. Exfiltration Detection Pipeline
-```
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   Capture   │ →  │   Parse     │ →  │   Detect    │
-│             │    │             │    │             │
-│ • DoH Flow  │    │ • Domain    │    │ • Patterns  │
-│ • Clear DNS │    │ • Subdom.   │    │ • Encoding  │
-│ • Metadata  │    │ • Timing    │    │ • Chunks    │
-└─────────────┘    └─────────────┘    └─────────────┘
-                                           │
-┌─────────────┐    ┌─────────────┐    ┌───▼─────────┐
-│   Store     │ ←  │ Reconstruct │ ←  │  Classify   │
-│             │    │             │    │             │
-│ • Files     │    │ • Assemble  │    │ • ML Models │
-│ • Metadata  │    │ • Decode    │    │ • Rules     │
-│ • Reports   │    │ • Verify    │    │ • Scores    │
-└─────────────┘    └─────────────┘    └─────────────┘
-```
-
-## 🔧 Component Details
-
-### DoH Server Configuration
-- **Base Image**: `satishweb/doh-server:latest`
-- **Protocol**: DNS-over-HTTPS (RFC 8484)
-- **Endpoint**: `/dns-query`
-- **Format**: JSON and binary
-- **Upstream**: Internal DNS resolver
-
-### DNS Resolver Configuration
-- **Software**: Unbound
-
-### Detection Components
-- **Dual Monitoring**: 
-  - Traffic Analyzer monitors encrypted DoH traffic from Traefik
-  - Exfil Interceptor monitors clear DNS queries from resolver
-- **Pattern Detection**: Regex-based chunk identification
-- **Traffic Analysis**: DoHLyzer integration for flow analysis  
-- **ML Classification**: Multiple algorithms (RF, GB, LR, SVM)
-- **Data Reconstruction**: Multi-format decoding and assembly from clear DNS
-
-### Machine Learning Components
-- **Dataset Management**: L2 benign/malicious datasets with preprocessing
-- **Model Training**: Automated pipeline with cross-validation
-- **Classification**: Real-time inference with ensemble methods
-- **Evaluation**: Comprehensive metrics and performance reports
-- **Model Persistence**: Versioned model artifacts and metadata
-
-## 📈 Scalability Considerations
-
-### Horizontal Scaling
-- **Load Balancing**: Traefik can distribute across multiple DoH servers
-- **Detection Scaling**: Multiple detection containers with shared storage
-
-### Performance Optimization
-- **Network Optimization**: Host networking for capture performance
-
-### Monitoring and Logging
-- **Container Logs**: Centralized logging via Docker
-- **Metrics Collection**: Performance and detection metrics
-- **Health Checks**: Service availability monitoring
-- **ML Metrics**: Model performance and drift detection
-
-## 🔒 Security Architecture
-
-### Network Security
-- **Isolation**: Separate networks for different components
-- **TLS**: End-to-end encryption for DoH traffic
-- **Firewall**: Host-based filtering and Docker network policies
-- **Certificate Management**: Automated cert generation and rotation
-
-### Container Security
-- **Minimal Images**: Alpine-based where possible
-- **Read-only Filesystems**: Where applicable
-- **Resource Limits**: CPU and memory constraints
-- **Capability Dropping**: Minimal required capabilities
-
-### Data Security
-- **Access Control**: Volume-based permissions
-- **Data Retention**: Configurable cleanup policies
-
-## 🎯 Design Principles
-
-1. **Modularity**: Each component serves a specific purpose
-2. **Scalability**: Easy to scale individual components
-3. **Maintainability**: Clear separation of concerns
-4. **Security**: Defense in depth approach
-5. **Observability**: Comprehensive logging and monitoring
-6. **Extensibility**: Plugin architecture for new detection methods
-7. **Reproducibility**: Consistent environments and deterministic builds
-8. **Performance**: Optimized for real-time processing and ML inference
-
-## 📋 Project Structure Mapping
-
-```
-Kent-Dissertation/
-├── certs/                  # TLS certificates and configuration
-├── classifier/             # ML model training and evaluation
-├── client_scripts/         # Testing and connectivity scripts
-├── datasets/              # Training datasets (L2 benign/malicious)
-├── docs/                  # Documentation (this file)
-├── DoHLyzer/             # Traffic analysis integration
-├── exfiltration/         # Exfiltration client and server
-├── ml_analyzer/          # Real-time ML inference
-├── ml_reports/           # Model performance reports
-├── models/               # Trained model artifacts
-├── resolver/             # DNS resolver configuration
-├── traffic_analyzer/     # DoH traffic monitoring
-├── docker-compose.yml    # Container orchestration
-├── generate_certs.sh     # Certificate generation script
-└── .env                  # Environment configuration
-```
-
-For detailed setup instructions, see [docs/development.md](docs/development.md).
+## 6) Minimal Ops Notes
+- **Isolate the lab**; do not expose services to production networks.
+- For quick tests, use `curl -k` or import the generated **lab CA**.
+- Default artifacts: `traffic_analyzer/output/*.csv`, `exfiltration/client/results/run-*/`, **reconstructed** files under `/app/captured/` (inside the interceptor container).

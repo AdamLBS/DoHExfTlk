@@ -1,9 +1,5 @@
 # DoHExfTlk — Exfiltration Guide
 
-> This guide shows how to run a full **DoH exfiltration → detection → ML validation** pipeline using your `run_pipeline.sh` and the exfiltration server.
-
----
-
 ## TL;DR — One command
 ```bash
 # From the repo root (where docker-compose.yml lives)
