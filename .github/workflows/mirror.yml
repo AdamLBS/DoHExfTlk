@@ -7,8 +7,8 @@ on:
     branches: [ main ]
 
 jobs:
-  test-docker-build:
-    name: Test Docker Compose Build
+  mirror-to-kent:
+    name: Mirror repository to Kent GitLab
     runs-on: ubuntu-latest
 
     steps:
