@@ -8,7 +8,6 @@ This system was developed for dissertation research on **DNS-over-HTTPS exfiltra
 
 - **Realistic exfiltration scenarios** for ML model training
 - **Configurable attack patterns** for detection algorithm testing  
-- **Data reconstruction capabilities** for forensic analysis
 - **Performance benchmarks** for detection system evaluation
 
 ## 📁 System Components
@@ -257,7 +256,6 @@ DoHExfiltrationServer
 │   ├── Decoding Engine
 │   ├── Decompression
 │   └── File Type Detection
-└── Forensic Analysis Tools
 ```
 
 ## 📚 Academic References

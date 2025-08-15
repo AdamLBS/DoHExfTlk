@@ -2,7 +2,7 @@
 
 ## 📊 Overview
 
-This guide covers the dataset used in the DoH Exfiltration Detection Platform, including traffic analysis, pattern detection, and forensic reconstruction. It provides insights into how data is collected, analyzed, and utilized for machine learning model training and validation.
+This guide covers the dataset used in the DoH Exfiltration Detection Platform, including traffic analysis, and pattern detection. It provides insights into how data is collected, analyzed, and utilized for machine learning model training and validation.
 
 ## 🔍 Data Collection and Sources
 

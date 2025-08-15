@@ -3,7 +3,7 @@
 ## 🎯 General Questions
 
 ### What is the DoH Exfiltration Detection Platform?
-A comprehensive research platform for studying and detecting data exfiltration techniques using DNS-over-HTTPS (DoH). It combines network traffic analysis, pattern detection, machine learning, and forensic reconstruction.
+A comprehensive research platform for studying and detecting data exfiltration techniques using DNS-over-HTTPS (DoH). It combines network traffic analysis, pattern detection, and machine learning.
 
 ### What is the purpose of this platform?
 - **Academic research** on DoH exfiltration techniques
@@ -237,7 +237,6 @@ docker cp exfil_client:/models ./trained_models/
 - Understanding covert channels
 - Studying DNS security
 - Analyzing ML in cybersecurity
-- Research in network forensics
 - Educational demonstration tool
 
 ## 🤝 Community Questions

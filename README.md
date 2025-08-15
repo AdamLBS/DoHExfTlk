@@ -51,7 +51,6 @@ It combines:
 **Use cases:**
 - Academic research
 - Cybersecurity training labs
-- Forensic investigations
 - Benchmarking detection methods
 
 ---
