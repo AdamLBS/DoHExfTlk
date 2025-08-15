@@ -161,6 +161,7 @@ docker exec -it client_test bash /scripts/test_exfiltration.sh
 ```
 
 ### Launch a full exfiltration scenario
+
 ```bash
 # Train model
 cd ml_analyzer
