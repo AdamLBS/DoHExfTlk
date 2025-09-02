@@ -129,12 +129,25 @@ flowchart TB
 - **Docker** & **Docker Compose**
 - Linux / macOS (or WSL2 for Windows)
 - At least **4 GB RAM**
+- **Python 3.12.3**
+- **All exposed ports are accessible**
+
+### ⚠️ Python packages
+
+**Make sure to install all of the requirements.txt packages in python virtual environment.**
+
+**Make sure to activate the virtual environment before running any Python scripts.**
+
+**When you are in any directory that uses Python scripts and you want to run a script outside of a container, make sure to activate the virtual environment first and check that the packages are installed.**
+
+**In case of error make sure you are using the same Python version as specified in the Prerequisites section as this toolkit has NOT been tested with other versions.**
+
 
 ### Installation
 ```bash
 # 1. Clone repository
 git clone git@github.com:AdamLBS/DohExfTlk.git
-cd DoHExfTlk
+cd DohExfTlk
 
 # 2. Download the dataset's CSVs used for the model training (l1-benign.csv & l2-malicious.csv)
 wget http://cicresearch.ca/CICDataset/DoHBrw-2020/Dataset/CSVs/Total_CSVs.zip
@@ -147,6 +160,7 @@ chmod +x generate_certs.sh
 ./generate_certs.sh
 
 # 3. Start infrastructure
+docker compose build
 docker compose up -d
 ```
 
@@ -164,6 +178,7 @@ docker exec -it client_test bash /scripts/test_doh.sh
 ```bash
 # Train model
 cd ml_analyzer
+# python3 can be used if python is not found
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -213,11 +228,12 @@ bash run_pipeline.sh
 ### Training Phase
 ```bash
 cd ml_analyzer
-python3 trainer.py --quick --fpr 0.01
+python3 model_trainer.py --quick --fpr 0.01
 # Models saved in /models/
 ```
 
 ### Detection & Classification Phase
+Theses commands are automatically executed by the pipeline, but can be used manually if needed.
 ```bash
 # 1. Analyze traffic with DoHLyzer
 # 2. Filter detected queries
@@ -251,20 +267,23 @@ python config_generator.py --list
 ```json
 {
   "name": "APT Simulation",
+  "description": "APT Simulation",
   "exfiltration_config": {
     "doh_server": "https://doh.local/dns-query",
-    "target_domain": "update-service.local",
+    "target_domain": "exfill.local",
     "chunk_size": 8,
     "encoding": "base32",
     "timing_pattern": "random",
     "base_delay": 30.0,
-    "encryption": true,
-    "domain_rotation": true,
-    "backup_domains": [
-      "security-updates.local",
-      "maintenance-api.local"
-    ]
-  }
+    "delay_variance": 15.0,
+    "compression": true,
+    "encryption": false,
+    "subdomain_randomization": false,
+    "domain_rotation": false,
+    "padding": true,
+    "padding_size": 20
+  },
+  "notes": "APT Simulation"
 }
 ```
 

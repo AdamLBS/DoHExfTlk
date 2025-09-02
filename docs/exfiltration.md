@@ -28,7 +28,7 @@ bash scripts/run_pipeline.sh
   - One subfolder per config, containing:
     - `logs/client.log` & `logs/predictor_*.log`
     - `captured/*.only_*.csv` (filtered flows used by the predictor)
-- **ML scripts:** `ml_analyzer/trainer.py`, `ml/predictor.py`
+- **ML scripts:** `ml_analyzer/model_trainer.py`, `ml_analyzer/predictor.py`
 
 ---
 
@@ -93,7 +93,7 @@ Best (least detected): stealth_burst — 3.23% — model: logistic_regression
 
 ## Minimal troubleshooting
 - **No filtered CSV found**: ensure the traffic actually hit `/dns-query` and the filter script path is correct (`IN_CONTAINER_FILTER_SCRIPT`).  
-- **Predictor says no models**: train first (`ml_analyzer/trainer.py`), then re‑run pipeline.
+- **Predictor says no models**: train first (`ml_analyzer/model_trainer.py`), then re‑run pipeline.
 - **TLS errors**: for quick tests use `curl -k` or import the generated CA into your lab machine.
 - **Ranking empty**: check per‑config `logs/predictor_*.log` for model sections.
 
